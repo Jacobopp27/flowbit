@@ -1,0 +1,56 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import get_settings
+from app.api.auth import router as auth_router
+from app.api.stages import router as stages_router
+from app.api.suppliers import router as suppliers_router
+from app.api.materials import router as materials_router
+from app.api.products import router as products_router
+from app.api.users import router as users_router
+from app.api.projects import router as projects_router
+from app.api.settings import router as settings_router
+from app.api.purchases import router as purchases_router
+from app.api.inventory import router as inventory_router
+
+settings = get_settings()
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.VERSION,
+    debug=settings.DEBUG
+)
+
+# CORS middleware for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(auth_router)
+app.include_router(stages_router, prefix="/stages", tags=["stages"])
+app.include_router(suppliers_router, prefix="/suppliers", tags=["suppliers"])
+app.include_router(materials_router, prefix="/materials", tags=["materials"])
+app.include_router(products_router, prefix="/products", tags=["products"])
+app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(projects_router, prefix="/projects", tags=["projects"])
+app.include_router(settings_router, prefix="/settings", tags=["settings"])
+app.include_router(purchases_router, prefix="/purchases", tags=["purchases"])
+app.include_router(inventory_router, prefix="/inventory/products", tags=["inventory"])
+
+
+@app.get("/")
+def root():
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.VERSION,
+        "environment": settings.ENVIRONMENT
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
