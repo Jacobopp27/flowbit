@@ -95,9 +95,11 @@ def register_super_admin(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current user info"""
-    return current_user
+    # Explicitly load company relationship
+    user = db.query(User).filter(User.id == current_user.id).first()
+    return user
 
 
 @router.post("/companies", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)

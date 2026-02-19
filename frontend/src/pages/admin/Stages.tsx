@@ -22,7 +22,7 @@ export function Stages() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
   const [formData, setFormData] = useState<StageCreate>({
-    stage_name: '',
+    name: '',
     description: '',
     color: '#3b82f6',
     is_purchasing_stage: false,
@@ -54,7 +54,7 @@ export function Stages() {
     if (stage) {
       setEditingStage(stage);
       setFormData({
-        stage_name: stage.name,
+        name: stage.name,
         description: stage.description || '',
         color: stage.color || '#3b82f6',
         is_purchasing_stage: stage.is_purchasing_stage || false,
@@ -75,7 +75,7 @@ export function Stages() {
     setIsDialogOpen(false);
     setEditingStage(null);
     setFormData({
-      stage_name: '',
+      name: '',
       description: '',
       color: '#3b82f6',
       is_purchasing_stage: false,
@@ -85,7 +85,7 @@ export function Stages() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.stage_name.trim()) {
+    if (!formData.name.trim()) {
       toast({
         title: 'Error',
         description: 'Stage name is required',
@@ -255,9 +255,9 @@ export function Stages() {
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
-                  value={formData.stage_name}
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, stage_name: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
                   }
                   placeholder="ej. Corte, Costura, Control de Calidad"
                   required

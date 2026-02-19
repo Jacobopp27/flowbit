@@ -53,7 +53,7 @@ app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(projects_router, prefix="/projects", tags=["projects"])
 app.include_router(settings_router, prefix="/settings", tags=["settings"])
 app.include_router(purchases_router, prefix="/purchases", tags=["purchases"])
-app.include_router(inventory_router, prefix="/inventory/products", tags=["inventory"])
+app.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
 app.include_router(notifications_router)
 
 

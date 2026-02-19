@@ -22,6 +22,9 @@ class Project(Base):
     sale_price = Column(Numeric(10, 2), nullable=True)
     sale_includes_tax = Column(Boolean, nullable=False, default=False)
     
+    # Inventory control
+    adds_to_inventory = Column(Boolean, nullable=False, default=False)
+    
     # Relationships
     company = relationship("Company", back_populates="projects")
     project_stages = relationship("ProjectStage", back_populates="project", cascade="all, delete-orphan")

@@ -4,7 +4,7 @@ import materialService, { Material } from '@/services/materials';
 import supplierService, { Supplier } from '@/services/suppliers';
 import { settingsService } from '@/services/settings';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, ShoppingCart } from 'lucide-react';
+import { Plus, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function Purchases() {
   const [purchases, setPurchases] = useState<MaterialPurchase[]>([]);
@@ -13,7 +13,11 @@ export function Purchases() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [inventoryEnabled, setInventoryEnabled] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const { toast } = useToast();
+  
+  const ITEMS_PER_PAGE = 10;
 
   const [formData, setFormData] = useState<MaterialPurchaseCreate>({
     material_id: 0,
@@ -27,6 +31,11 @@ export function Purchases() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMonth]);
 
   const loadData = async () => {
     try {
@@ -88,6 +97,30 @@ export function Purchases() {
       });
     }
   };
+
+  // Get unique months from purchases
+  const availableMonths = Array.from(new Set(
+    purchases.map(p => {
+      const date = new Date(p.purchase_date);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    })
+  )).sort().reverse();
+
+  // Filter purchases by selected month
+  const filteredPurchases = selectedMonth === 'all' 
+    ? purchases 
+    : purchases.filter(p => {
+        const date = new Date(p.purchase_date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return monthKey === selectedMonth;
+      });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredPurchases.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedPurchases = filteredPurchases.slice(startIndex, endIndex);
+  const totalInvested = filteredPurchases.reduce((sum, p) => sum + Number(p.total_cost), 0);
 
   if (!inventoryEnabled) {
     return (
@@ -232,7 +265,7 @@ export function Purchases() {
                   Costo Total
                 </label>
                 <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 font-semibold">
-                  ${(formData.quantity * formData.unit_cost).toFixed(2)}
+                  ${(formData.quantity * formData.unit_cost).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             </div>
@@ -268,6 +301,40 @@ export function Purchases() {
         </div>
       )}
 
+      {/* Filter and Summary */}
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">Filtrar por mes:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">Todos los meses</option>
+              {availableMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                const date = new Date(parseInt(year), parseInt(monthNum) - 1);
+                const monthName = date.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+                return (
+                  <option key={month} value={month}>
+                    {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="text-sm text-gray-600">
+              Total de compras: <span className="font-semibold text-gray-900">{filteredPurchases.length}</span>
+            </span>
+            <span className="text-lg font-bold text-blue-600">
+              Total invertido: ${totalInvested.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -297,14 +364,16 @@ export function Purchases() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {purchases.length === 0 ? (
+              {paginatedPurchases.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    No hay compras registradas
+                    {selectedMonth === 'all' 
+                      ? 'No hay compras registradas' 
+                      : 'No hay compras en el mes seleccionado'}
                   </td>
                 </tr>
               ) : (
-                purchases.map((purchase) => (
+                paginatedPurchases.map((purchase) => (
                   <tr key={purchase.purchase_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(purchase.purchase_date).toLocaleDateString()}
@@ -316,13 +385,13 @@ export function Purchases() {
                       {purchase.supplier_name || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {Number(purchase.quantity).toFixed(2)}
+                      {Number(purchase.quantity).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      ${Number(purchase.unit_cost).toFixed(2)}
+                      ${Number(purchase.unit_cost).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
-                      ${Number(purchase.total_cost).toFixed(2)}
+                      ${Number(purchase.total_cost).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {purchase.notes || '-'}
@@ -333,20 +402,37 @@ export function Purchases() {
             </tbody>
           </table>
         </div>
-      </div>
 
-      {purchases.length > 0 && (
-        <div className="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-blue-900">
-              Total de compras: {purchases.length}
-            </span>
-            <span className="text-lg font-bold text-blue-900">
-              Total invertido: ${purchases.reduce((sum, p) => sum + Number(p.total_cost), 0).toFixed(2)}
-            </span>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Mostrando {startIndex + 1} a {Math.min(endIndex, filteredPurchases.length)} de {filteredPurchases.length} compras
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </button>
+              <span className="text-sm text-gray-600">
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

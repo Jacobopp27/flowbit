@@ -19,14 +19,14 @@ export interface Stage {
 }
 
 export interface StageCreate {
-  stage_name: string;
+  name: string;
   description?: string;
   color?: string;
   is_purchasing_stage?: boolean;
 }
 
 export interface StageUpdate {
-  stage_name?: string;
+  name?: string;
   description?: string;
   color?: string;
   is_purchasing_stage?: boolean;

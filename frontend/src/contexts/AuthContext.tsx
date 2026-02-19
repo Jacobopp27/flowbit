@@ -41,13 +41,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const response = await authService.login({
-      username,
-      password,
-    });
-    
-    localStorage.setItem('token', response.access_token);
-    await refreshUser();
+    try {
+      const response = await authService.login({
+        username,
+        password,
+      });
+      
+      localStorage.setItem('token', response.access_token);
+      await refreshUser();
+    } catch (error) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error; // Re-throw para que Login.tsx pueda capturarlo
+    }
   };
 
   const logout = () => {

@@ -33,6 +33,7 @@ class ProjectCreate(BaseModel):
     stages: List[ProjectStageCreate] = []  # Stage instances with deadlines
     sale_price: Optional[float] = None
     sale_includes_tax: bool = False
+    adds_to_inventory: bool = False
 
 
 class ProjectUpdate(BaseModel):

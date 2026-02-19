@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import User, UserRole, UserStageAccess
 from app.models.stage import Stage
 from app.schemas.user import UserCreateByAdmin, UserUpdateByAdmin, UserListResponse
 from app.api.auth import get_current_user, check_admin_or_company_admin
-from app.auth import get_password_hash
+from app.auth import get_password_hash, verify_password
 
 router = APIRouter()
 
@@ -290,3 +291,30 @@ def delete_user(
     db.commit()
     
     return {"message": "User deactivated successfully"}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+def change_password(
+    password_data: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Change the current user's password"""
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Contraseña actual incorrecta")
+    
+    # Validate new password length
+    if len(password_data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    
+    # Update password
+    current_user.hashed_password = get_password_hash(password_data.new_password)
+    db.commit()
+    
+    return {"message": "Contraseña cambiada exitosamente"}

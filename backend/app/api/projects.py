@@ -261,6 +261,31 @@ def get_dashboard_metrics(
     estimated_profit = total_projected_revenue - total_costs
     profit_margin = (estimated_profit / total_projected_revenue * 100) if total_projected_revenue > 0 else 0
     
+    # Get actual sales revenue from product sales (if PT inventory tracking is enabled)
+    from app.models.inventory import ProductSale
+    actual_sales_revenue = 0
+    
+    if view == "monthly" and year and month:
+        # Get sales for the specific month
+        from datetime import date
+        from calendar import monthrange
+        start_date = date(year, month, 1)
+        end_date = date(year, month, monthrange(year, month)[1])
+        
+        sales = db.query(ProductSale).filter(
+            ProductSale.company_id == current_user.company_id,
+            ProductSale.sale_date >= start_date,
+            ProductSale.sale_date <= end_date
+        ).all()
+    else:
+        # Get all sales
+        sales = db.query(ProductSale).filter(
+            ProductSale.company_id == current_user.company_id
+        ).all()
+    
+    for sale in sales:
+        actual_sales_revenue += float(sale.quantity) * float(sale.unit_price)
+    
     # Prepare response with view metadata
     response = {
         "view_type": view,
@@ -276,6 +301,7 @@ def get_dashboard_metrics(
         },
         "financial": {
             "projected_revenue": round(total_projected_revenue, 2),
+            "actual_sales_revenue": round(actual_sales_revenue, 2),
             "material_costs": round(total_material_costs, 2),
             "operational_costs": round(total_operational_costs, 2),
             "total_costs": round(total_costs, 2),
@@ -461,6 +487,28 @@ def get_my_work_stage_detail(
                     "status": dep_stage.status.value
                 })
     
+    # For purchasing stages, calculate qty_required and qty_done based on materials
+    qty_required = float(project_stage.qty_required) if project_stage.qty_required else 0
+    qty_done = float(project_stage.qty_done) if project_stage.qty_done else 0
+    
+    if stage.is_purchasing_stage:
+        # Get total materials needed
+        materials_needed = db.query(ProjectMaterialRequirement).filter(
+            ProjectMaterialRequirement.project_id == project.id
+        ).all()
+        
+        # Calculate total materials required and purchased
+        total_materials_needed = sum(float(req.qty_total) for req in materials_needed)
+        
+        # Get total materials purchased for this project
+        materials_purchased = db.query(ProjectMaterialPurchase).filter(
+            ProjectMaterialPurchase.project_id == project.id
+        ).all()
+        total_materials_purchased = sum(float(p.quantity) for p in materials_purchased)
+        
+        qty_required = total_materials_needed
+        qty_done = total_materials_purchased
+    
     return {
         "project_stage_id": project_stage.id,
         "project_id": project.id,
@@ -469,8 +517,8 @@ def get_my_work_stage_detail(
         "stage_id": stage.id,
         "stage_name": stage.name,
         "status": project_stage.status.value,
-        "qty_required": float(project_stage.qty_required) if project_stage.qty_required else 0,
-        "qty_done": float(project_stage.qty_done) if project_stage.qty_done else 0,
+        "qty_required": qty_required,
+        "qty_done": qty_done,
         "planned_due_date": project_stage.planned_due_date.isoformat() if project_stage.planned_due_date else None,
         "actual_started_at": project_stage.actual_started_at.isoformat() if project_stage.actual_started_at else None,
         "actual_done_at": project_stage.actual_done_at.isoformat() if project_stage.actual_done_at else None,
@@ -730,6 +778,7 @@ def create_project(
         notes=project_data.notes,
         sale_price=project_data.sale_price,
         sale_includes_tax=project_data.sale_includes_tax,
+        adds_to_inventory=project_data.adds_to_inventory,
     )
     
     db.add(new_project)
@@ -948,6 +997,52 @@ def can_stage_be_ready(db: Session, project_stage_id: int) -> bool:
     return True
 
 
+def check_and_add_to_inventory(db: Session, project_id: int):
+    """
+    Check if all stages of a project are done, and if the project should add to inventory.
+    If yes, add all products to the finished products inventory.
+    """
+    # Get project
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project or not project.adds_to_inventory:
+        return
+    
+    # Check if company has finished products inventory enabled
+    company = db.query(Company).filter(Company.id == project.company_id).first()
+    if not company or not company.track_finished_products_inventory:
+        return
+    
+    # Check if all stages are DONE
+    all_stages = db.query(ProjectStage).filter(ProjectStage.project_id == project_id).all()
+    if not all([stage.status == StageStatus.DONE for stage in all_stages]):
+        return  # Not all stages are done yet
+    
+    # Get project products
+    project_products = db.query(ProjectProduct).filter(ProjectProduct.project_id == project_id).all()
+    
+    # Add products to inventory
+    for pp in project_products:
+        # Check if product already exists in inventory
+        inventory_item = db.query(ProductInventory).filter(
+            ProductInventory.company_id == project.company_id,
+            ProductInventory.product_id == pp.product_id
+        ).first()
+        
+        if inventory_item:
+            # Update existing inventory
+            inventory_item.qty_available += pp.quantity
+        else:
+            # Create new inventory item
+            inventory_item = ProductInventory(
+                company_id=project.company_id,
+                product_id=pp.product_id,
+                qty_available=pp.quantity
+            )
+            db.add(inventory_item)
+    
+    db.commit()
+
+
 def auto_update_stage_status(db: Session, project_id: int):
     """
     Auto-update stage statuses based on dependencies.
@@ -1069,6 +1164,8 @@ def update_project_stage(
         # If this stage was marked as DONE, check if other stages can become READY
         if stage_data.status == StageStatus.DONE:
             auto_update_stage_status(db, project_id)
+            # Check if all stages are done, and if so, add products to inventory
+            check_and_add_to_inventory(db, project_id)
     
     # Get stage name
     stage = db.query(Stage).filter(Stage.id == project_stage.stage_id).first()
@@ -1653,6 +1750,18 @@ def get_project_stage_detail(
                     'inventory_available': float(material.qty_available),
                 })
     
+    # For purchasing stages, calculate qty_required and qty_done based on materials
+    qty_required = float(ps.qty_required) if ps.qty_required else 0
+    qty_done = float(ps.qty_done) if ps.qty_done else 0
+    
+    if stage.is_purchasing_stage and materials_info:
+        # Calculate total materials needed and purchased
+        total_materials_needed = sum(m['qty_needed'] for m in materials_info)
+        total_materials_purchased = sum(m['qty_purchased'] for m in materials_info)
+        
+        qty_required = total_materials_needed
+        qty_done = total_materials_purchased
+    
     return {
         'project_id': project.id,
         'project_name': project.project_name,
@@ -1663,8 +1772,8 @@ def get_project_stage_detail(
         'stage_name': stage.name,
         'stage_status': ps.status,
         'is_purchasing_stage': stage.is_purchasing_stage,
-        'qty_required': ps.qty_required,
-        'qty_done': ps.qty_done,
+        'qty_required': qty_required,
+        'qty_done': qty_done,
         'planned_due_date': ps.planned_due_date,
         'actual_ready_at': ps.actual_ready_at,
         'actual_started_at': ps.actual_started_at,

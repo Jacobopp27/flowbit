@@ -117,7 +117,7 @@ export function MaterialsInventory() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Valor Total</p>
-              <p className="text-3xl font-bold text-green-600">${totalValue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-green-600">${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
             <div className="text-green-600 text-4xl font-bold">$</div>
           </div>

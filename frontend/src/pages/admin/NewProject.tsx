@@ -19,6 +19,7 @@ export function NewProject() {
     notes: '',
     sale_price: undefined as number | undefined,
     sale_includes_tax: true,
+    adds_to_inventory: false,
   });
 
   const [selectedProducts, setSelectedProducts] = useState<ProjectProductItem[]>([]);
@@ -307,6 +308,19 @@ export function NewProject() {
               />
               <label htmlFor="sale_includes_tax" className="ml-2 block text-sm text-gray-700">
                 El precio incluye IVA (19%)
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="adds_to_inventory"
+                checked={formData.adds_to_inventory}
+                onChange={(e) => setFormData({ ...formData, adds_to_inventory: e.target.checked })}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="adds_to_inventory" className="ml-2 block text-sm text-gray-700">
+                Agregar productos al inventario PT al finalizar
               </label>
             </div>
           </div>

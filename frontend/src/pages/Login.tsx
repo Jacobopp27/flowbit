@@ -22,7 +22,9 @@ export default function Login() {
       await login(username, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión');
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Error al iniciar sesión';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

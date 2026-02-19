@@ -17,6 +17,7 @@ interface DashboardMetrics {
   };
   financial: {
     projected_revenue: number;
+    actual_sales_revenue: number;
     material_costs: number;
     operational_costs: number;
     total_costs: number;
@@ -195,7 +196,7 @@ export function AdminDashboard() {
 
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Ingresos Proyectados</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Ingresos</CardTitle>
             <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
@@ -204,18 +205,26 @@ export function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">
-              ${metrics.financial.projected_revenue.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs text-gray-500">Ventas PT</p>
+                <div className="text-2xl font-bold text-green-600">
+                  ${metrics.financial.actual_sales_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Proyectos</p>
+                <div className="text-2xl font-bold text-blue-600">
+                  ${metrics.financial.projected_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Margen: {metrics.financial.profit_margin_percent.toFixed(1)}%
-            </p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">Ganancia Estimada</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Ganancia</CardTitle>
             <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -224,12 +233,12 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${
-              metrics.financial.estimated_profit >= 0 ? 'text-emerald-600' : 'text-red-600'
+              (metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs) >= 0 ? 'text-emerald-600' : 'text-red-600'
             }`}>
-              ${metrics.financial.estimated_profit.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+              ${(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Costos: ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+              Costos: ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </CardContent>
         </Card>
@@ -324,30 +333,42 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
+              <div className="flex justify-between items-center p-2 bg-green-50 rounded">
+                <span className="text-sm text-gray-700 font-medium">Ventas PT</span>
+                <span className="font-semibold text-green-600">
+                  ${metrics.financial.actual_sales_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                <span className="text-sm text-gray-700 font-medium">Proyectos</span>
+                <span className="font-semibold text-blue-600">
+                  ${metrics.financial.projected_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
               <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Materiales</span>
                 <span className="font-semibold text-gray-900">
-                  ${metrics.financial.material_costs.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                  ${metrics.financial.material_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Operativos</span>
                 <span className="font-semibold text-gray-900">
-                  ${metrics.financial.operational_costs.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                  ${metrics.financial.operational_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t-2">
                 <span className="text-sm font-semibold text-gray-700">Total Costos</span>
                 <span className="font-bold text-gray-900">
-                  ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                  ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t-2 bg-emerald-50 -mx-6 px-6 py-3 mt-3">
                 <span className="text-sm font-semibold text-gray-700">Ganancia Neta</span>
                 <span className={`text-lg font-bold ${
-                  metrics.financial.estimated_profit >= 0 ? 'text-emerald-600' : 'text-red-600'
+                  (metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs) >= 0 ? 'text-emerald-600' : 'text-red-600'
                 }`}>
-                  ${metrics.financial.estimated_profit.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                  ${(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
