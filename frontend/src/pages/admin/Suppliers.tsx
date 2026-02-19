@@ -36,7 +36,7 @@ export default function Suppliers() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to load suppliers',
+        description: error.response?.data?.detail || 'Error al cargar proveedores',
         variant: 'destructive',
       });
     } finally {
@@ -85,7 +85,7 @@ export default function Suppliers() {
     if (!formData.name.trim()) {
       toast({
         title: 'Error',
-        description: 'Supplier name is required',
+        description: 'El nombre del proveedor es obligatorio',
         variant: 'destructive',
       });
       return;
@@ -104,8 +104,8 @@ export default function Suppliers() {
         
         await supplierService.update(editingSupplier.id, updateData);
         toast({
-          title: 'Success',
-          description: 'Supplier updated successfully',
+          title: 'Éxito',
+          description: 'Proveedor actualizado correctamente',
         });
       } else {
         // Clean up empty strings to undefined for optional fields
@@ -118,8 +118,8 @@ export default function Suppliers() {
         };
         await supplierService.create(createData);
         toast({
-          title: 'Success',
-          description: 'Supplier created successfully',
+          title: 'Éxito',
+          description: 'Proveedor creado correctamente',
         });
       }
       
@@ -128,7 +128,7 @@ export default function Suppliers() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save supplier',
+        description: error.response?.data?.detail || 'Error al guardar proveedor',
         variant: 'destructive',
       });
     } finally {
@@ -137,21 +137,21 @@ export default function Suppliers() {
   };
 
   const handleDelete = async (supplier: Supplier) => {
-    if (!confirm(`Are you sure you want to delete "${supplier.name}"?`)) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${supplier.name}"?`)) {
       return;
     }
 
     try {
       await supplierService.delete(supplier.id);
       toast({
-        title: 'Success',
-        description: 'Supplier deleted successfully',
+        title: 'Éxito',
+        description: 'Proveedor eliminado correctamente',
       });
       loadSuppliers();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to delete supplier',
+        description: error.response?.data?.detail || 'Error al eliminar proveedor',
         variant: 'destructive',
       });
     }
@@ -169,8 +169,8 @@ export default function Suppliers() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-muted-foreground">Manage your company suppliers</p>
+          <h1 className="text-3xl font-bold tracking-tight">Proveedores</h1>
+          <p className="text-muted-foreground">Gestiona los proveedores de tu empresa</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -182,70 +182,70 @@ export default function Suppliers() {
           <DialogContent className="sm:max-w-[500px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>{editingSupplier ? 'Edit Supplier' : 'Create Supplier'}</DialogTitle>
+                <DialogTitle>{editingSupplier ? 'Editar Proveedor' : 'Crear Proveedor'}</DialogTitle>
                 <DialogDescription>
-                  {editingSupplier ? 'Update supplier information' : 'Add a new supplier to your company'}
+                  {editingSupplier ? 'Actualizar información del proveedor' : 'Agregar un nuevo proveedor a tu empresa'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="name">
-                    Supplier Name <span className="text-red-500">*</span>
+                    Nombre del Proveedor <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter supplier name"
+                    placeholder="Ingresa el nombre del proveedor"
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="contact_name">Contact Name</Label>
+                  <Label htmlFor="contact_name">Nombre de Contacto</Label>
                   <Input
                     id="contact_name"
                     value={formData.contact_name}
                     onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                    placeholder="Enter contact person"
+                    placeholder="Ingresa el nombre de la persona de contacto"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Correo Electrónico</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="contact@supplier.com"
+                    placeholder="contacto@proveedor.com"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Teléfono</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter phone number"
+                    placeholder="Ingresa el número de teléfono"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Dirección</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter supplier address"
+                    placeholder="Ingresa la dirección del proveedor"
                     rows={3}
                   />
                 </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={submitting}>
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={submitting}>
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingSupplier ? 'Update' : 'Create'}
+                  {editingSupplier ? 'Actualizar' : 'Crear'}
                 </Button>
               </DialogFooter>
             </form>
@@ -257,11 +257,11 @@ export default function Suppliers() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">No suppliers yet</p>
-            <p className="text-sm text-muted-foreground mb-4">Get started by creating your first supplier</p>
+            <p className="text-lg font-medium">No hay proveedores aún</p>
+            <p className="text-sm text-muted-foreground mb-4">Comienza creando tu primer proveedor</p>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Supplier
+              Agregar Proveedor
             </Button>
           </CardContent>
         </Card>
@@ -293,22 +293,22 @@ export default function Suppliers() {
                 <CardDescription className="space-y-1">
                   {supplier.contact_name && (
                     <div className="text-sm">
-                      <span className="font-medium">Contact:</span> {supplier.contact_name}
+                      <span className="font-medium">Contacto:</span> {supplier.contact_name}
                     </div>
                   )}
                   {supplier.email && (
                     <div className="text-sm">
-                      <span className="font-medium">Email:</span> {supplier.email}
+                      <span className="font-medium">Correo:</span> {supplier.email}
                     </div>
                   )}
                   {supplier.phone && (
                     <div className="text-sm">
-                      <span className="font-medium">Phone:</span> {supplier.phone}
+                      <span className="font-medium">Teléfono:</span> {supplier.phone}
                     </div>
                   )}
                   {supplier.address && (
                     <div className="text-sm">
-                      <span className="font-medium">Address:</span> {supplier.address}
+                      <span className="font-medium">Dirección:</span> {supplier.address}
                     </div>
                   )}
                 </CardDescription>

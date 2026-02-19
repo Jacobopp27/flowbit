@@ -50,7 +50,7 @@ export function Users() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to load data',
+        description: error.response?.data?.detail || 'Error al cargar datos',
         variant: 'destructive',
       });
     } finally {
@@ -105,7 +105,7 @@ export function Users() {
     if (!formData.email.trim() || !formData.full_name.trim()) {
       toast({
         title: 'Error',
-        description: 'Email and name are required',
+        description: 'El correo electrónico y el nombre son obligatorios',
         variant: 'destructive',
       });
       return;
@@ -114,7 +114,7 @@ export function Users() {
     if (formData.role === UserRole.STAGE_WORKER && (!formData.stage_ids || formData.stage_ids.length === 0)) {
       toast({
         title: 'Error',
-        description: 'Stage Worker must be assigned to at least one stage',
+        description: 'El trabajador de etapa debe estar asignado a al menos una etapa',
         variant: 'destructive',
       });
       return;
@@ -123,7 +123,7 @@ export function Users() {
     if (!editingUser && !formData.password) {
       toast({
         title: 'Error',
-        description: 'Password is required for new users',
+        description: 'La contraseña es obligatoria para nuevos usuarios',
         variant: 'destructive',
       });
       return;
@@ -151,14 +151,14 @@ export function Users() {
         
         await userService.update(editingUser.id, updateData);
         toast({
-          title: 'Success',
-          description: 'User updated successfully',
+          title: 'Éxito',
+          description: 'Usuario actualizado correctamente',
         });
       } else {
         await userService.create(dataToSubmit);
         toast({
-          title: 'Success',
-          description: 'User created successfully',
+          title: 'Éxito',
+          description: 'Usuario creado correctamente',
         });
       }
       
@@ -167,7 +167,7 @@ export function Users() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save user',
+        description: error.response?.data?.detail || 'Error al guardar usuario',
         variant: 'destructive',
       });
     } finally {
@@ -176,21 +176,21 @@ export function Users() {
   };
 
   const handleDelete = async (user: User) => {
-    if (!confirm(`Are you sure you want to deactivate "${user.full_name}"?`)) {
+    if (!confirm(`¿Estás seguro de que deseas desactivar a "${user.full_name}"?`)) {
       return;
     }
 
     try {
       await userService.delete(user.id);
       toast({
-        title: 'Success',
-        description: 'User deactivated successfully',
+        title: 'Éxito',
+        description: 'Usuario desactivado correctamente',
       });
       loadUsers();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to deactivate user',
+        description: error.response?.data?.detail || 'Error al desactivar usuario',
         variant: 'destructive',
       });
     }
@@ -203,9 +203,9 @@ export function Users() {
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case UserRole.COMPANY_ADMIN:
-        return 'Company Admin';
+        return 'Administrador';
       case UserRole.STAGE_WORKER:
-        return 'Stage Worker';
+        return 'Trabajador de Etapa';
       default:
         return role;
     }
@@ -240,32 +240,32 @@ export function Users() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
           <p className="text-muted-foreground">
-            Manage team members, roles, and stage access
+            Gestiona miembros del equipo, roles y acceso a etapas
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          New User
+          Nuevo Usuario
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
+          <CardTitle>Miembros del Equipo</CardTitle>
           <CardDescription>
-            View and manage user accounts and permissions
+            Ver y gestionar cuentas de usuario y permisos
           </CardDescription>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-center py-12">
               <UsersIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No users added yet</p>
+              <p className="text-muted-foreground mb-4">No hay usuarios agregados aún</p>
               <Button onClick={() => handleOpenDialog()} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Add your first user
+                Agregar tu primer usuario
               </Button>
             </div>
           ) : (
@@ -288,7 +288,7 @@ export function Users() {
                           <h3 className="font-semibold">{user.full_name}</h3>
                           {!user.is_active && (
                             <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-                              Inactive
+                              Inactivo
                             </span>
                           )}
                         </div>
@@ -304,7 +304,7 @@ export function Users() {
                             <>
                               <span className="text-xs text-muted-foreground">•</span>
                               <p className="text-xs text-muted-foreground">
-                                Stages: {getStageNames(user.stage_ids)}
+                                Etapas: {getStageNames(user.stage_ids)}
                               </p>
                             </>
                           )}
@@ -342,31 +342,31 @@ export function Users() {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
-                {editingUser ? 'Edit User' : 'Create New User'}
+                {editingUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
               </DialogTitle>
               <DialogDescription>
                 {editingUser
-                  ? 'Update user information and permissions'
-                  : 'Add a new team member to your company'}
+                  ? 'Actualizar información y permisos del usuario'
+                  : 'Agregar un nuevo miembro al equipo de tu empresa'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name *</Label>
+                <Label htmlFor="full_name">Nombre Completo *</Label>
                 <Input
                   id="full_name"
                   value={formData.full_name}
                   onChange={(e) =>
                     setFormData({ ...formData, full_name: e.target.value })
                   }
-                  placeholder="John Doe"
+                  placeholder="Juan Pérez"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Correo Electrónico *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -374,16 +374,16 @@ export function Users() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="john@company.com"
+                  placeholder="juan@empresa.com"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Can be used to login
+                  Puede usarse para iniciar sesión
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Username (optional)</Label>
+                <Label htmlFor="username">Nombre de Usuario (opcional)</Label>
                 <Input
                   id="username"
                   type="text"
@@ -391,15 +391,15 @@ export function Users() {
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
-                  placeholder="johndoe"
+                  placeholder="juanperez"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Can also be used to login instead of email
+                  También puede usarse para iniciar sesión en lugar del correo
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
+                <Label htmlFor="role">Rol *</Label>
                 <select
                   id="role"
                   value={formData.role}
@@ -409,20 +409,20 @@ export function Users() {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 >
-                  <option value={UserRole.STAGE_WORKER}>Stage Worker</option>
-                  <option value={UserRole.COMPANY_ADMIN}>Company Admin</option>
+                  <option value={UserRole.STAGE_WORKER}>Trabajador de Etapa</option>
+                  <option value={UserRole.COMPANY_ADMIN}>Administrador</option>
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Company Admin: Full access. Stage Worker: Access only to assigned stages.
+                  Administrador: Acceso completo. Trabajador de Etapa: Acceso solo a etapas asignadas.
                 </p>
               </div>
 
               {formData.role === UserRole.STAGE_WORKER && (
                 <div className="space-y-2">
-                  <Label>Stage Access *</Label>
+                  <Label>Acceso a Etapas *</Label>
                   <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                     {stages.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No stages available</p>
+                      <p className="text-sm text-muted-foreground">No hay etapas disponibles</p>
                     ) : (
                       stages.map((stage) => (
                         <div key={stage.id} className="flex items-center space-x-2">
@@ -449,14 +449,14 @@ export function Users() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Select which stages this worker can access
+                    Selecciona a qué etapas puede acceder este trabajador
                   </p>
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  Password {editingUser ? '(leave empty to keep current)' : '*'}
+                  Contraseña {editingUser ? '(dejar vacío para mantener la actual)' : '*'}
                 </Label>
                 <Input
                   id="password"
@@ -471,7 +471,7 @@ export function Users() {
                 />
                 {!editingUser && (
                   <p className="text-xs text-muted-foreground">
-                    Minimum 6 characters
+                    Mínimo 6 caracteres
                   </p>
                 )}
               </div>
@@ -487,7 +487,7 @@ export function Users() {
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="is_active" className="text-sm font-normal cursor-pointer">
-                  Active user
+                  Usuario activo
                 </Label>
               </div>
             </div>
@@ -499,11 +499,11 @@ export function Users() {
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingUser ? 'Update' : 'Create'}
+                {editingUser ? 'Actualizar' : 'Crear'}
               </Button>
             </DialogFooter>
           </form>

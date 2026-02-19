@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Package2, ArrowRight } from 'lucide-react';
+import flowbitLogo from '@/assets/flowbit-logoblanco.png';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -35,12 +36,11 @@ export default function Login() {
         
         <div className="relative z-10 flex flex-col justify-center px-16 text-white">
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Package2 className="h-10 w-10" />
-              <h1 className="text-4xl font-bold">Flowbit</h1>
+            <div className="flex items-center mb-6">
+              <img src={flowbitLogo} alt="Flowbit" className="h-40 w-auto" />
             </div>
             <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Operations OS para SMEs
+            Sistema Operativo para Producción en PYMES
             </p>
             <div className="space-y-4 text-blue-50">
               <div className="flex items-start gap-3">
@@ -68,9 +68,8 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Package2 className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Flowbit</h1>
+          <div className="lg:hidden flex items-center mb-8">
+            <img src={flowbitLogo} alt="Flowbit" className="h-20 w-auto" />
           </div>
 
           <div className="mb-8">

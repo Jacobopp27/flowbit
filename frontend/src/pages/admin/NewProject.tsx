@@ -16,6 +16,7 @@ export function NewProject() {
     client_name: '',
     start_date: '',
     final_deadline: '',
+    notes: '',
     sale_price: undefined as number | undefined,
     sale_includes_tax: true,
   });
@@ -157,6 +158,16 @@ export function NewProject() {
       return;
     }
 
+    // Validate dates
+    if (formData.start_date && formData.final_deadline) {
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.final_deadline);
+      if (endDate < startDate) {
+        alert('La fecha de entrega no puede ser anterior a la fecha de inicio');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const project = await projectService.create({
@@ -255,6 +266,19 @@ export function NewProject() {
                 value={formData.final_deadline}
                 onChange={(e) => setFormData({ ...formData, final_deadline: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notas / Descripción
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Descripción o notas sobre el proyecto..."
               />
             </div>
 

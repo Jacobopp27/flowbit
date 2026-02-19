@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -70,6 +70,9 @@ def get_projects(
 
 @router.get("/dashboard/metrics")
 def get_dashboard_metrics(
+    view: str = Query("total", regex="^(total|monthly)$"),
+    year: int = Query(None),
+    month: int = Query(None, ge=1, le=12),
     db: Session = Depends(get_db),
     current_user: User = Depends(check_admin_or_company_admin)
 ):
@@ -81,12 +84,25 @@ def get_dashboard_metrics(
     - On-time vs delayed projects
     - Critical stages (blocked stages)
     - Low inventory alerts
+    
+    Parameters:
+    - view: 'total' for all-time metrics, 'monthly' for monthly breakdown
+    - year: Year for monthly view (defaults to current year)
+    - month: Month for filtering (1-12, optional for monthly view)
     """
     if not current_user.company_id:
         raise HTTPException(status_code=403, detail="Admin must belong to a company")
     
     from datetime import date
+    from calendar import monthrange
     today = date.today()
+    
+    # Set defaults for monthly view
+    if view == "monthly":
+        if year is None:
+            year = today.year
+        if month is None:
+            month = today.month
     
     # Get all projects for the company
     all_projects = db.query(Project).filter(
@@ -150,22 +166,58 @@ def get_dashboard_metrics(
                     })
         
         # Financial aggregation
+        # For monthly view, include revenue if project's deadline falls in the selected month
         if project.sale_price:
-            total_projected_revenue += float(project.sale_price)
+            if view == "monthly":
+                # Include revenue if project's deadline is in the selected month
+                if project.final_deadline:
+                    deadline_date = project.final_deadline
+                    start_date = date(year, month, 1)
+                    end_date = date(year, month, monthrange(year, month)[1])
+                    if start_date <= deadline_date <= end_date:
+                        total_projected_revenue += float(project.sale_price)
+            else:
+                # For total view, include all project revenue
+                total_projected_revenue += float(project.sale_price)
         
         # Material costs
-        material_purchases = db.query(ProjectMaterialPurchase).filter(
-            ProjectMaterialPurchase.project_id == project.id
-        ).all()
-        total_material_costs += sum(
-            float(p.unit_cost) * float(p.quantity_purchased) 
-            for p in material_purchases
-        )
+        # For monthly view, include costs only if project's deadline is in the selected month
+        if view == "monthly":
+            if project.final_deadline:
+                start_date = date(year, month, 1)
+                end_date = date(year, month, monthrange(year, month)[1])
+                if start_date <= project.final_deadline <= end_date:
+                    material_purchases = db.query(ProjectMaterialPurchase).filter(
+                        ProjectMaterialPurchase.project_id == project.id
+                    ).all()
+                    total_material_costs += sum(
+                        float(p.unit_cost) * float(p.quantity_purchased) 
+                        for p in material_purchases
+                    )
+        else:
+            material_purchases = db.query(ProjectMaterialPurchase).filter(
+                ProjectMaterialPurchase.project_id == project.id
+            ).all()
+            total_material_costs += sum(
+                float(p.unit_cost) * float(p.quantity_purchased) 
+                for p in material_purchases
+            )
         
         # Operational costs
-        for stage in stages:
-            if stage.has_operational_cost and stage.cost_per_unit:
-                total_operational_costs += float(stage.cost_per_unit) * float(stage.qty_done or 0)
+        # For monthly view, include costs only if project's deadline is in the selected month
+        if view == "monthly":
+            if project.final_deadline:
+                start_date = date(year, month, 1)
+                end_date = date(year, month, monthrange(year, month)[1])
+                if start_date <= project.final_deadline <= end_date:
+                    for stage in stages:
+                        if stage.has_operational_cost and stage.cost_per_unit and stage.qty_done:
+                            total_operational_costs += float(stage.cost_per_unit) * float(stage.qty_done)
+        else:
+            # For total view, include all operational costs
+            for stage in stages:
+                if stage.has_operational_cost and stage.cost_per_unit and stage.qty_done:
+                    total_operational_costs += float(stage.cost_per_unit) * float(stage.qty_done)
     
     # Critical stages (blocked stages in active projects)
     critical_stages = []
@@ -209,7 +261,13 @@ def get_dashboard_metrics(
     estimated_profit = total_projected_revenue - total_costs
     profit_margin = (estimated_profit / total_projected_revenue * 100) if total_projected_revenue > 0 else 0
     
-    return {
+    # Prepare response with view metadata
+    response = {
+        "view_type": view,
+        "period": {
+            "year": year if view == "monthly" else None,
+            "month": month if view == "monthly" else None
+        },
         "summary": {
             "total_projects": len(all_projects),
             "active_projects": len(active_projects),
@@ -234,6 +292,8 @@ def get_dashboard_metrics(
         "critical_stages": critical_stages[:5],  # Top 5
         "low_inventory_alerts": low_inventory_materials[:10]  # Top 10
     }
+    
+    return response
 
 
 @router.get("/my-work/stages")
@@ -601,6 +661,7 @@ def get_project(
         client_name=project.client_name,
         start_date=project.start_date,
         final_deadline=project.final_deadline,
+        notes=project.notes,
         created_at=project.created_at,
         sale_price=float(project.sale_price) if project.sale_price else None,
         sale_includes_tax=project.sale_includes_tax,
@@ -619,6 +680,14 @@ def create_project(
     """Create new project with products and stages"""
     if not current_user.company_id:
         raise HTTPException(status_code=403, detail="Admin must belong to a company")
+    
+    # Validate dates
+    if project_data.start_date and project_data.final_deadline:
+        if project_data.final_deadline < project_data.start_date:
+            raise HTTPException(
+                status_code=400,
+                detail="La fecha de entrega no puede ser anterior a la fecha de inicio"
+            )
     
     # Validate stages exist and belong to company
     if not project_data.stages or len(project_data.stages) == 0:
@@ -658,6 +727,7 @@ def create_project(
         client_name=project_data.client_name,
         start_date=project_data.start_date,
         final_deadline=project_data.final_deadline,
+        notes=project_data.notes,
         sale_price=project_data.sale_price,
         sale_includes_tax=project_data.sale_includes_tax,
     )
@@ -770,6 +840,16 @@ def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Validate dates if being updated
+    start_date = project_data.start_date if project_data.start_date is not None else project.start_date
+    final_deadline = project_data.final_deadline if project_data.final_deadline is not None else project.final_deadline
+    
+    if start_date and final_deadline and final_deadline < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="La fecha de entrega no puede ser anterior a la fecha de inicio"
+        )
+    
     # Update basic fields
     if project_data.project_name is not None:
         project.project_name = project_data.project_name
@@ -779,6 +859,8 @@ def update_project(
         project.start_date = project_data.start_date
     if project_data.final_deadline is not None:
         project.final_deadline = project_data.final_deadline
+    if project_data.notes is not None:
+        project.notes = project_data.notes
     if project_data.sale_price is not None:
         project.sale_price = project_data.sale_price
     if project_data.sale_includes_tax is not None:
@@ -871,6 +953,8 @@ def auto_update_stage_status(db: Session, project_id: int):
     Auto-update stage statuses based on dependencies.
     Stages become READY when all their dependencies are DONE.
     """
+    from app.services import notification_service
+    
     stages = db.query(ProjectStage).filter(
         ProjectStage.project_id == project_id,
         ProjectStage.status == StageStatus.BLOCKED
@@ -879,6 +963,8 @@ def auto_update_stage_status(db: Session, project_id: int):
     for stage in stages:
         if can_stage_be_ready(db, stage.id):
             stage.status = StageStatus.READY
+            # 🔔 Notify workers that this stage is now ready (Type 1)
+            notification_service.notify_stage_ready(db, stage.id)
     
     db.commit()
 

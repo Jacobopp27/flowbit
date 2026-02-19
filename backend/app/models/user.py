@@ -53,6 +53,7 @@ class User(Base):
     # Relationships
     company = relationship("Company", back_populates="users")
     stage_access = relationship("UserStageAccess", back_populates="user")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserStageAccess(Base):

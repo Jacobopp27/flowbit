@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import projectService, {
   ProjectDetail as ProjectDetailType,
-  ProjectStageUpdate,
   FinancialSummary,
 } from '../../services/projects';
 
@@ -12,6 +11,11 @@ export function ProjectDetail() {
   const [project, setProject] = useState<ProjectDetailType | null>(null);
   const [loading, setLoading] = useState(true);
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    final_deadline: '',
+    notes: '',
+  });
 
   useEffect(() => {
     if (id) {
@@ -23,6 +27,10 @@ export function ProjectDetail() {
     try {
       const data = await projectService.getById(projectId);
       setProject(data);
+      setEditData({
+        final_deadline: data.final_deadline || '',
+        notes: data.notes || '',
+      });
       
       // Load financial summary
       try {
@@ -69,6 +77,43 @@ export function ProjectDetail() {
     return labels[status] || status;
   };
 
+  const handleSaveEdit = async () => {
+    if (!project) return;
+
+    // Validate dates
+    if (editData.final_deadline) {
+      const startDate = new Date(project.start_date);
+      const endDate = new Date(editData.final_deadline);
+      if (endDate < startDate) {
+        alert('La fecha de entrega no puede ser anterior a la fecha de inicio');
+        return;
+      }
+    }
+
+    try {
+      await projectService.update(project.project_id, {
+        final_deadline: editData.final_deadline,
+        notes: editData.notes,
+      });
+      await loadProject(project.project_id);
+      setIsEditing(false);
+      alert('Proyecto actualizado correctamente');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      alert('Error al actualizar el proyecto');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (project) {
+      setEditData({
+        final_deadline: project.final_deadline || '',
+        notes: project.notes || '',
+      });
+    }
+    setIsEditing(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -100,12 +145,20 @@ export function ProjectDetail() {
             <h1 className="text-3xl font-bold text-gray-800 mb-2">{project.project_name}</h1>
             <p className="text-gray-600">Cliente: {project.client_name}</p>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600">Progreso del Proyecto</div>
-            <div className="text-2xl font-bold text-blue-600">{progress}%</div>
-            <div className="text-sm text-gray-500">
-              {completedStages} / {totalStages} etapas
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-sm text-gray-600">Progreso del Proyecto</div>
+              <div className="text-2xl font-bold text-blue-600">{progress}%</div>
+              <div className="text-sm text-gray-500">
+                {completedStages} / {totalStages} etapas
+              </div>
             </div>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {isEditing ? 'Cancelar' : 'Editar Proyecto'}
+            </button>
           </div>
         </div>
       </div>
@@ -113,7 +166,7 @@ export function ProjectDetail() {
       {/* Información General */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Información General</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <div className="text-sm text-gray-600">Fecha de Inicio</div>
             <div className="text-lg font-semibold">
@@ -122,9 +175,18 @@ export function ProjectDetail() {
           </div>
           <div>
             <div className="text-sm text-gray-600">Fecha de Entrega</div>
-            <div className="text-lg font-semibold">
-              {new Date(project.final_deadline).toLocaleDateString('es-MX')}
-            </div>
+            {isEditing ? (
+              <input
+                type="date"
+                value={editData.final_deadline}
+                onChange={(e) => setEditData({ ...editData, final_deadline: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <div className="text-lg font-semibold">
+                {new Date(project.final_deadline).toLocaleDateString('es-MX')}
+              </div>
+            )}
           </div>
           <div>
             <div className="text-sm text-gray-600">Estado General</div>
@@ -136,6 +198,38 @@ export function ProjectDetail() {
             </div>
           </div>
         </div>
+        <div className="mt-4 pt-4 border-t">
+          <div className="text-sm text-gray-600 mb-1">Notas del Proyecto</div>
+          {isEditing ? (
+            <textarea
+              value={editData.notes}
+              onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Descripción o notas sobre el proyecto..."
+            />
+          ) : (
+            <div className="text-gray-800 bg-gray-50 p-3 rounded-lg whitespace-pre-wrap">
+              {project.notes || 'Sin notas'}
+            </div>
+          )}
+        </div>
+        {isEditing && (
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={handleCancelEdit}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Productos del Proyecto */}

@@ -43,7 +43,7 @@ export function Materials() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to load materials',
+        description: error.response?.data?.detail || 'Error al cargar materiales',
         variant: 'destructive',
       });
     } finally {
@@ -95,7 +95,7 @@ export function Materials() {
     if (!formData.name.trim() || !formData.unit.trim()) {
       toast({
         title: 'Error',
-        description: 'Material name and unit are required',
+        description: 'El nombre del material y la unidad son obligatorios',
         variant: 'destructive',
       });
       return;
@@ -107,14 +107,14 @@ export function Materials() {
       if (editingMaterial) {
         await materialService.update(editingMaterial.id, formData as MaterialUpdate);
         toast({
-          title: 'Success',
-          description: 'Material updated successfully',
+          title: 'Éxito',
+          description: 'Material actualizado correctamente',
         });
       } else {
         await materialService.create(formData);
         toast({
-          title: 'Success',
-          description: 'Material created successfully',
+          title: 'Éxito',
+          description: 'Material creado correctamente',
         });
       }
       
@@ -123,7 +123,7 @@ export function Materials() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save material',
+        description: error.response?.data?.detail || 'Error al guardar material',
         variant: 'destructive',
       });
     } finally {
@@ -132,21 +132,21 @@ export function Materials() {
   };
 
   const handleDelete = async (material: Material) => {
-    if (!confirm(`Are you sure you want to delete "${material.name}"?`)) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${material.name}"?`)) {
       return;
     }
 
     try {
       await materialService.delete(material.id);
       toast({
-        title: 'Success',
-        description: 'Material deleted successfully',
+        title: 'Éxito',
+        description: 'Material eliminado correctamente',
       });
       loadMaterials();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to delete material',
+        description: error.response?.data?.detail || 'Error al eliminar material',
         variant: 'destructive',
       });
     }
@@ -164,32 +164,32 @@ export function Materials() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Materials</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Materiales</h1>
           <p className="text-muted-foreground">
-            Manage raw materials and components
+            Gestiona materias primas y componentes
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          New Material
+          Nuevo Material
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Material Catalog</CardTitle>
+          <CardTitle>Catálogo de Materiales</CardTitle>
           <CardDescription>
-            View and manage your material inventory
+            Ver y gestionar tu inventario de materiales
           </CardDescription>
         </CardHeader>
         <CardContent>
           {materials.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No materials added yet</p>
+              <p className="text-muted-foreground mb-4">No hay materiales agregados aún</p>
               <Button onClick={() => handleOpenDialog()} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Add your first material
+                Agregar tu primer material
               </Button>
             </div>
           ) : (
@@ -206,10 +206,10 @@ export function Materials() {
                     <div>
                       <h3 className="font-semibold">{material.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Unit: {material.unit}
+                        Unidad: {material.unit}
                         {material.supplier_id && suppliers.length > 0 && (
                           <span className="ml-2">
-                            • Supplier: {suppliers.find(s => s.id === material.supplier_id)?.name || 'Unknown'}
+                            • Proveedor: {suppliers.find(s => s.id === material.supplier_id)?.name || 'Desconocido'}
                           </span>
                         )}
                       </p>
@@ -244,47 +244,47 @@ export function Materials() {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
-                {editingMaterial ? 'Edit Material' : 'Create New Material'}
+                {editingMaterial ? 'Editar Material' : 'Crear Nuevo Material'}
               </DialogTitle>
               <DialogDescription>
                 {editingMaterial
-                  ? 'Update the material details below'
-                  : 'Add a new material to your catalog'}
+                  ? 'Actualizar los detalles del material'
+                  : 'Agregar un nuevo material a tu catálogo'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., Cotton Fabric, Thread, Button"
+                  placeholder="ej. Tela de Algodón, Hilo, Botón"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit *</Label>
+                <Label htmlFor="unit">Unidad *</Label>
                 <Input
                   id="unit"
                   value={formData.unit}
                   onChange={(e) =>
                     setFormData({ ...formData, unit: e.target.value })
                   }
-                  placeholder="e.g., m, kg, unit, L"
+                  placeholder="ej. m, kg, unidad, L"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Measurement unit (meters, kilograms, units, liters, etc.)
+                  Unidad de medida (metros, kilogramos, unidades, litros, etc.)
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="supplier">Supplier (Optional)</Label>
+                <Label htmlFor="supplier">Proveedor (Opcional)</Label>
                 <select
                   id="supplier"
                   value={formData.supplier_id || ''}
@@ -296,7 +296,7 @@ export function Materials() {
                   }
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <option value="">No supplier</option>
+                  <option value="">Sin proveedor</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
                       {supplier.name}
@@ -304,7 +304,7 @@ export function Materials() {
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Select the supplier for this material
+                  Selecciona el proveedor para este material
                 </p>
               </div>
             </div>
@@ -316,11 +316,11 @@ export function Materials() {
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingMaterial ? 'Update' : 'Create'}
+                {editingMaterial ? 'Actualizar' : 'Crear'}
               </Button>
             </DialogFooter>
           </form>

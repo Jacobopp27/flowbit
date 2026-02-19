@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.config import get_settings
 from app.api.auth import router as auth_router
 from app.api.stages import router as stages_router
@@ -11,13 +12,26 @@ from app.api.projects import router as projects_router
 from app.api.settings import router as settings_router
 from app.api.purchases import router as purchases_router
 from app.api.inventory import router as inventory_router
+from app.api.notifications import router as notifications_router
+from app.tasks.scheduler import start_scheduler, shutdown_scheduler
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start the notification scheduler
+    start_scheduler()
+    yield
+    # Shutdown: Stop the scheduler
+    shutdown_scheduler()
+
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
+    lifespan=lifespan
 )
 
 # CORS middleware for frontend
@@ -40,6 +54,7 @@ app.include_router(projects_router, prefix="/projects", tags=["projects"])
 app.include_router(settings_router, prefix="/settings", tags=["settings"])
 app.include_router(purchases_router, prefix="/purchases", tags=["purchases"])
 app.include_router(inventory_router, prefix="/inventory/products", tags=["inventory"])
+app.include_router(notifications_router)
 
 
 @app.get("/")

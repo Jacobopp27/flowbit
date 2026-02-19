@@ -43,7 +43,7 @@ export function Products() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to load products',
+        description: error.response?.data?.detail || 'Error al cargar productos',
         variant: 'destructive',
       });
     } finally {
@@ -95,8 +95,8 @@ export function Products() {
   const addBOMItem = () => {
     if (materials.length === 0) {
       toast({
-        title: 'No materials',
-        description: 'Please create materials before adding BOM items',
+        title: 'Sin materiales',
+        description: 'Por favor crea materiales antes de agregar elementos al BOM',
         variant: 'destructive',
       });
       return;
@@ -126,7 +126,7 @@ export function Products() {
     if (!formData.name.trim()) {
       toast({
         title: 'Error',
-        description: 'Product name is required',
+        description: 'El nombre del producto es obligatorio',
         variant: 'destructive',
       });
       return;
@@ -144,14 +144,14 @@ export function Products() {
       if (editingProduct) {
         await productService.update(editingProduct.id, submitData);
         toast({
-          title: 'Success',
-          description: 'Product updated successfully',
+          title: 'Éxito',
+          description: 'Producto actualizado correctamente',
         });
       } else {
         await productService.create(submitData);
         toast({
-          title: 'Success',
-          description: 'Product created successfully',
+          title: 'Éxito',
+          description: 'Producto creado correctamente',
         });
       }
       
@@ -160,7 +160,7 @@ export function Products() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save product',
+        description: error.response?.data?.detail || 'Error al guardar producto',
         variant: 'destructive',
       });
     } finally {
@@ -169,28 +169,28 @@ export function Products() {
   };
 
   const handleDelete = async (product: Product) => {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${product.name}"?`)) {
       return;
     }
 
     try {
       await productService.delete(product.id);
       toast({
-        title: 'Success',
-        description: 'Product deleted successfully',
+        title: 'Éxito',
+        description: 'Producto eliminado correctamente',
       });
       loadProducts();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to delete product',
+        description: error.response?.data?.detail || 'Error al eliminar producto',
         variant: 'destructive',
       });
     }
   };
 
   const getMaterialName = (materialId: number) => {
-    return materials.find(m => m.id === materialId)?.name || 'Unknown';
+    return materials.find(m => m.id === materialId)?.name || 'Desconocido';
   };
 
   const getMaterialUnit = (materialId: number) => {
@@ -209,32 +209,32 @@ export function Products() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
           <p className="text-muted-foreground">
-            Manage products and bills of materials (BOM)
+            Gestiona productos y listas de materiales (BOM)
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          New Product
+          Nuevo Producto
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Product Catalog</CardTitle>
+          <CardTitle>Catálogo de Productos</CardTitle>
           <CardDescription>
-            View products and their material requirements
+            Ver productos y sus requerimientos de materiales
           </CardDescription>
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No products added yet</p>
+              <p className="text-muted-foreground mb-4">No hay productos agregados aún</p>
               <Button onClick={() => handleOpenDialog()} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Add your first product
+                Agregar tu primer producto
               </Button>
             </div>
           ) : (
@@ -276,14 +276,14 @@ export function Products() {
                   
                   {product.bom_items.length > 0 && (
                     <div className="ml-14 space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Bill of Materials:</p>
+                      <p className="text-sm font-medium text-muted-foreground">Lista de Materiales:</p>
                       <div className="space-y-1">
                         {product.bom_items.map((item) => (
                           <div key={item.id} className="text-sm flex items-center gap-2">
                             <span className="text-muted-foreground">•</span>
                             <span>{getMaterialName(item.material_id)}</span>
                             <span className="text-muted-foreground">
-                              - {item.qty_per_unit} {getMaterialUnit(item.material_id)} per unit
+                              - {item.qty_per_unit} {getMaterialUnit(item.material_id)} por unidad
                             </span>
                           </div>
                         ))}
@@ -303,44 +303,44 @@ export function Products() {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
-                {editingProduct ? 'Edit Product' : 'Create New Product'}
+                {editingProduct ? 'Editar Producto' : 'Crear Nuevo Producto'}
               </DialogTitle>
               <DialogDescription>
                 {editingProduct
-                  ? 'Update the product details and BOM'
-                  : 'Add a new product to your catalog'}
+                  ? 'Actualizar detalles del producto y BOM'
+                  : 'Agregar un nuevo producto a tu catálogo'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., T-Shirt, Backpack"
+                  placeholder="ej. Camiseta, Mochila"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sku">SKU (Optional)</Label>
+                <Label htmlFor="sku">SKU (Opcional)</Label>
                 <Input
                   id="sku"
                   value={formData.sku}
                   onChange={(e) =>
                     setFormData({ ...formData, sku: e.target.value })
                   }
-                  placeholder="e.g., TSHIRT-001"
+                  placeholder="ej. CAMISETA-001"
                 />
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Bill of Materials (BOM)</Label>
+                  <Label>Lista de Materiales (BOM)</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -348,13 +348,13 @@ export function Products() {
                     onClick={addBOMItem}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Material
+                    Agregar Material
                   </Button>
                 </div>
 
                 {formData.bom_items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No materials added yet. Click "Add Material" to define the BOM.
+                    No se agregaron materiales aún. Haz clic en "Agregar Material" para definir el BOM.
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -378,7 +378,7 @@ export function Products() {
                           </select>
                         </div>
                         <div className="w-32">
-                          <Label htmlFor={`qty-${index}`}>Qty per unit</Label>
+                          <Label htmlFor={`qty-${index}`}>Cant. por unidad</Label>
                           <Input
                             id={`qty-${index}`}
                             type="number"
@@ -413,11 +413,11 @@ export function Products() {
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingProduct ? 'Update' : 'Create'}
+                {editingProduct ? 'Actualizar' : 'Crear'}
               </Button>
             </DialogFooter>
           </form>

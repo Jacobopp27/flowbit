@@ -28,6 +28,7 @@ class ProjectCreate(BaseModel):
     client_name: str = Field(..., min_length=1, max_length=200)
     start_date: Optional[date] = None
     final_deadline: Optional[date] = None
+    notes: Optional[str] = None
     products: List[ProjectProductItem] = []  # Products with quantities
     stages: List[ProjectStageCreate] = []  # Stage instances with deadlines
     sale_price: Optional[float] = None
@@ -40,6 +41,7 @@ class ProjectUpdate(BaseModel):
     client_name: Optional[str] = Field(None, min_length=1, max_length=200)
     start_date: Optional[date] = None
     final_deadline: Optional[date] = None
+    notes: Optional[str] = None
     sale_price: Optional[float] = None
     sale_includes_tax: Optional[bool] = None
     products: Optional[List[ProjectProductItem]] = None
@@ -130,6 +132,7 @@ class ProjectDetailResponse(BaseModel):
     client_name: str
     start_date: Optional[date] = None
     final_deadline: Optional[date] = None
+    notes: Optional[str] = None
     created_at: datetime
     sale_price: Optional[float] = None
     sale_includes_tax: bool = False

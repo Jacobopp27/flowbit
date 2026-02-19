@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import flowbitLogo from '@/assets/flowbit-logo.png';
 
 interface NavItem {
   title: string;
@@ -26,73 +27,73 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
+    title: 'Panel Principal',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
     role: 'ADMIN',
   },
   {
-    title: 'Projects',
+    title: 'Proyectos',
     href: '/admin/projects',
     icon: FolderKanban,
     role: 'ADMIN',
   },
   {
-    title: 'Stages',
+    title: 'Etapas',
     href: '/admin/stages',
     icon: Layers,
     role: 'ADMIN',
   },
   {
-    title: 'Users',
+    title: 'Usuarios',
     href: '/admin/users',
     icon: Users,
     role: 'ADMIN',
   },
   {
-    title: 'Products',
+    title: 'Productos',
     href: '/admin/products',
     icon: Package,
     role: 'ADMIN',
   },
   {
-    title: 'Materials',
+    title: 'Materiales',
     href: '/admin/materials',
     icon: Boxes,
     role: 'ADMIN',
   },
   {
-    title: 'Suppliers',
+    title: 'Proveedores',
     href: '/admin/suppliers',
     icon: Building2,
     role: 'ADMIN',
   },
   {
-    title: 'Purchases',
+    title: 'Compras',
     href: '/admin/purchases',
     icon: ShoppingCart,
     role: 'ADMIN',
   },
   {
-    title: 'Inventory MP',
+    title: 'Inventario MP',
     href: '/admin/inventory/materials',
     icon: Warehouse,
     role: 'ADMIN',
   },
   {
-    title: 'Inventory PT',
+    title: 'Inventario PT',
     href: '/admin/inventory/products',
     icon: Warehouse,
     role: 'ADMIN',
   },
   {
-    title: 'Settings',
+    title: 'Configuración',
     href: '/admin/settings',
     icon: SettingsIcon,
     role: 'ADMIN',
   },
   {
-    title: 'My Work',
+    title: 'Mis Tareas',
     href: '/work',
     icon: Briefcase,
     role: 'WORKER',
@@ -114,11 +115,12 @@ export function Sidebar({ role, onClose }: SidebarProps) {
   return (
     <div className="flex h-full flex-col border-r bg-background">
       <div className="flex h-16 items-center border-b px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-lg font-bold">F</span>
-          </div>
-          <span className="text-xl">Flowbit</span>
+        <Link to="/" className="flex items-center">
+          <img 
+            src={flowbitLogo} 
+            alt="Flowbit" 
+            className="h-10 w-auto"
+          />
         </Link>
       </div>
 
@@ -153,7 +155,7 @@ export function Sidebar({ role, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
           <div className="font-medium">Role: {role}</div>
           <Separator className="my-2" />
-          <div>Flowbit Operations OS</div>
+          <div>Flowbiit - Sistema Operativo para Producción</div>
           <div>v0.1.0 MVP</div>
         </div>
       </div>

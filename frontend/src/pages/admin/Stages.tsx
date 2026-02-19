@@ -42,7 +42,7 @@ export function Stages() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to load stages',
+        description: error.response?.data?.detail || 'Error al cargar etapas',
         variant: 'destructive',
       });
     } finally {
@@ -100,14 +100,14 @@ export function Stages() {
       if (editingStage) {
         await stageService.update(editingStage.id, formData as StageUpdate);
         toast({
-          title: 'Success',
-          description: 'Stage updated successfully',
+          title: 'Éxito',
+          description: 'Etapa actualizada exitosamente',
         });
       } else {
         await stageService.create(formData);
         toast({
-          title: 'Success',
-          description: 'Stage created successfully',
+          title: 'Éxito',
+          description: 'Etapa creada exitosamente',
         });
       }
       
@@ -116,7 +116,7 @@ export function Stages() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to save stage',
+        description: error.response?.data?.detail || 'Error al guardar etapa',
         variant: 'destructive',
       });
     } finally {
@@ -125,21 +125,21 @@ export function Stages() {
   };
 
   const handleDelete = async (stage: Stage) => {
-    if (!confirm(`Are you sure you want to delete "${stage.name}"?`)) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar "${stage.name}"?`)) {
       return;
     }
 
     try {
       await stageService.delete(stage.id);
       toast({
-        title: 'Success',
-        description: 'Stage deleted successfully',
+        title: 'Éxito',
+        description: 'Etapa eliminada exitosamente',
       });
       loadStages();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to delete stage',
+        description: error.response?.data?.detail || 'Error al eliminar etapa',
         variant: 'destructive',
       });
     }
@@ -157,31 +157,31 @@ export function Stages() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stages</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Etapas</h1>
           <p className="text-muted-foreground">
-            Configure workflow stages and dependencies
+            Configura las etapas del flujo de trabajo y sus dependencias
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          New Stage
+          Nueva Etapa
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Workflow Stages</CardTitle>
+          <CardTitle>Etapas del Flujo de Trabajo</CardTitle>
           <CardDescription>
-            Define the stages that make up your workflows
+            Define las etapas que conforman tus flujos de trabajo
           </CardDescription>
         </CardHeader>
         <CardContent>
           {stages.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No stages configured yet</p>
+              <p className="text-muted-foreground mb-4">No hay etapas configuradas aún</p>
               <Button onClick={() => handleOpenDialog()} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Create your first stage
+                Crea tu primera etapa
               </Button>
             </div>
           ) : (
@@ -241,38 +241,38 @@ export function Stages() {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
-                {editingStage ? 'Edit Stage' : 'Create New Stage'}
+                {editingStage ? 'Editar Etapa' : 'Crear Nueva Etapa'}
               </DialogTitle>
               <DialogDescription>
                 {editingStage
-                  ? 'Update the stage details below'
-                  : 'Add a new workflow stage to your company'}
+                  ? 'Actualiza los detalles de la etapa'
+                  : 'Agrega una nueva etapa de trabajo a tu empresa'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
                   value={formData.stage_name}
                   onChange={(e) =>
                     setFormData({ ...formData, stage_name: e.target.value })
                   }
-                  placeholder="e.g., Cut, Sew, Quality Check"
+                  placeholder="ej. Corte, Costura, Control de Calidad"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="Optional description of this stage"
+                  placeholder="Descripción opcional de esta etapa"
                   rows={3}
                 />
               </div>
@@ -323,11 +323,11 @@ export function Stages() {
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingStage ? 'Update' : 'Create'}
+                {editingStage ? 'Actualizar' : 'Crear'}
               </Button>
             </DialogFooter>
           </form>

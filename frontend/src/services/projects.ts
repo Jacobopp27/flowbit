@@ -20,8 +20,7 @@ export interface ProjectCreate {
   project_name: string;
   client_name: string;
   start_date: string;
-  final_deadline: string;
-  products: ProjectProductItem[];
+  final_deadline: string;  notes?: string;  products: ProjectProductItem[];
   stages: ProjectStageCreate[];
   sale_price?: number;
   sale_includes_tax: boolean;
@@ -32,6 +31,7 @@ export interface ProjectUpdate {
   client_name?: string;
   start_date?: string;
   final_deadline?: string;
+  notes?: string;
   sale_price?: number;
   sale_includes_tax?: boolean;
   products?: ProjectProductItem[];
@@ -191,6 +191,7 @@ export interface ProjectDetail {
   client_name: string;
   start_date: string;
   final_deadline: string;
+  notes?: string;
   stages: ProjectStage[];
   material_requirements: MaterialRequirement[];
   products: { product_id: number; product_name: string; quantity: number }[];

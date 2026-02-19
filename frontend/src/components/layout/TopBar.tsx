@@ -2,6 +2,7 @@ import { Menu, Building2, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +45,7 @@ export function TopBar({ onMenuClick, showMenuButton = false }: TopBarProps) {
           onClick={onMenuClick}
         >
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          <span className="sr-only">Alternar menú</span>
         </Button>
       )}
 
@@ -54,6 +55,9 @@ export function TopBar({ onMenuClick, showMenuButton = false }: TopBarProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-4">
+        {/* Notification Bell */}
+        <NotificationBell />
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2">
@@ -81,14 +85,14 @@ export function TopBar({ onMenuClick, showMenuButton = false }: TopBarProps) {
               </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-          <DropdownMenuItem>Company Settings</DropdownMenuItem>
+          <DropdownMenuItem>Configuración de Perfil</DropdownMenuItem>
+          <DropdownMenuItem>Configuración de Empresa</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive"
             onClick={handleLogout}
           >
-            Sign Out
+            Cerrar Sesión
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

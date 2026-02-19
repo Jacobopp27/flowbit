@@ -15,6 +15,7 @@ class Project(Base):
     client_name = Column(String, nullable=False)
     start_date = Column(Date, nullable=True)
     final_deadline = Column(Date, nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Economics
