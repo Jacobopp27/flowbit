@@ -117,62 +117,82 @@ export function AdminDashboard() {
       </div>
 
       {/* View Selector */}
-      <div className="flex items-center gap-4 p-4 bg-white rounded-lg border">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Vista:</label>
-          <select
-            value={viewType}
-            onChange={(e) => setViewType(e.target.value as 'total' | 'monthly')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="total">Total Acumulado</option>
-            <option value="monthly">Por Mes</option>
-          </select>
-        </div>
-
-        {viewType === 'monthly' && (
-          <>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Año:</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Vista:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewType('total')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewType === 'total' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Mes:</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                Total Acumulado
+              </button>
+              <button
+                onClick={() => setViewType('monthly')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewType === 'monthly' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                {[
-                  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                ].map((month, index) => (
-                  <option key={index} value={index + 1}>{month}</option>
-                ))}
-              </select>
+                Por Mes
+              </button>
             </div>
-          </>
-        )}
-
-        {viewType === 'monthly' && metrics && (
-          <div className="ml-auto text-sm text-gray-600">
-            Mostrando datos de: <span className="font-semibold text-gray-900">
-              {[
-                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-              ][selectedMonth - 1]} {selectedYear}
-            </span>
           </div>
-        )}
+
+          {viewType === 'monthly' && (
+            <>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Año:</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Mes:</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {[
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                  ].map((month, index) => (
+                    <option key={index} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+              </div>
+
+              {metrics && (
+                <div className="ml-auto flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium text-blue-900">
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ][selectedMonth - 1]} {selectedYear}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -209,13 +229,13 @@ export function AdminDashboard() {
               <div>
                 <p className="text-xs text-gray-500">Ventas PT</p>
                 <div className="text-2xl font-bold text-green-600">
-                  ${metrics.financial.actual_sales_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.actual_sales_revenue).toLocaleString('es-MX')}
                 </div>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Proyectos</p>
                 <div className="text-2xl font-bold text-blue-600">
-                  ${metrics.financial.projected_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.projected_revenue).toLocaleString('es-MX')}
                 </div>
               </div>
             </div>
@@ -235,10 +255,10 @@ export function AdminDashboard() {
             <div className={`text-3xl font-bold ${
               (metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs) >= 0 ? 'text-emerald-600' : 'text-red-600'
             }`}>
-              ${(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${Math.round(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX')}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Costos: ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Costos: ${Math.round(metrics.financial.total_costs).toLocaleString('es-MX')}
             </p>
           </CardContent>
         </Card>
@@ -336,31 +356,31 @@ export function AdminDashboard() {
               <div className="flex justify-between items-center p-2 bg-green-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Ventas PT</span>
                 <span className="font-semibold text-green-600">
-                  ${metrics.financial.actual_sales_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.actual_sales_revenue).toLocaleString('es-MX')}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Proyectos</span>
                 <span className="font-semibold text-blue-600">
-                  ${metrics.financial.projected_revenue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.projected_revenue).toLocaleString('es-MX')}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Materiales</span>
                 <span className="font-semibold text-gray-900">
-                  ${metrics.financial.material_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.material_costs).toLocaleString('es-MX')}
                 </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                 <span className="text-sm text-gray-700 font-medium">Operativos</span>
                 <span className="font-semibold text-gray-900">
-                  ${metrics.financial.operational_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.operational_costs).toLocaleString('es-MX')}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t-2">
                 <span className="text-sm font-semibold text-gray-700">Total Costos</span>
                 <span className="font-bold text-gray-900">
-                  ${metrics.financial.total_costs.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.total_costs).toLocaleString('es-MX')}
                 </span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t-2 bg-emerald-50 -mx-6 px-6 py-3 mt-3">
@@ -368,7 +388,7 @@ export function AdminDashboard() {
                 <span className={`text-lg font-bold ${
                   (metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs) >= 0 ? 'text-emerald-600' : 'text-red-600'
                 }`}>
-                  ${(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(metrics.financial.actual_sales_revenue + metrics.financial.projected_revenue - metrics.financial.total_costs).toLocaleString('es-MX')}
                 </span>
               </div>
             </div>

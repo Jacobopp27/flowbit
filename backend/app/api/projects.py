@@ -1255,7 +1255,7 @@ def delete_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(check_admin_or_company_admin)
 ):
-    """Delete project"""
+    """Delete project and all related records"""
     if not current_user.company_id:
         raise HTTPException(status_code=403, detail="Admin must belong to a company")
     
@@ -1267,14 +1267,50 @@ def delete_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Delete related records (cascade should handle this, but being explicit)
-    db.query(ProjectStage).filter(ProjectStage.project_id == project_id).delete()
-    db.query(ProjectMaterialRequirement).filter(ProjectMaterialRequirement.project_id == project_id).delete()
-    
-    db.delete(project)
-    db.commit()
-    
-    return {"message": "Project deleted successfully"}
+    try:
+        # Get all project stage IDs for this project
+        project_stage_ids = [stage.id for stage in db.query(ProjectStage).filter(ProjectStage.project_id == project_id).all()]
+        
+        # 1. Delete stage event logs
+        if project_stage_ids:
+            db.query(StageEventLog).filter(StageEventLog.project_stage_id.in_(project_stage_ids)).delete(synchronize_session=False)
+            
+            # 2. Delete stage dependencies (using correct column names: stage_id and depends_on_stage_id)
+            db.query(ProjectStageDependency).filter(
+                ProjectStageDependency.stage_id.in_(project_stage_ids)
+            ).delete(synchronize_session=False)
+            
+            db.query(ProjectStageDependency).filter(
+                ProjectStageDependency.depends_on_stage_id.in_(project_stage_ids)
+            ).delete(synchronize_session=False)
+        
+        # 3. Delete material purchases
+        db.query(ProjectMaterialPurchase).filter(ProjectMaterialPurchase.project_id == project_id).delete(synchronize_session=False)
+        
+        # 4. Delete material requirements
+        db.query(ProjectMaterialRequirement).filter(ProjectMaterialRequirement.project_id == project_id).delete(synchronize_session=False)
+        
+        # 5. Delete financial events
+        db.query(FinancialEvent).filter(FinancialEvent.project_id == project_id).delete(synchronize_session=False)
+        
+        # 6. Delete project products
+        db.query(ProjectProduct).filter(ProjectProduct.project_id == project_id).delete(synchronize_session=False)
+        
+        # 7. Delete project stages
+        db.query(ProjectStage).filter(ProjectStage.project_id == project_id).delete(synchronize_session=False)
+        
+        # 8. Finally delete the project
+        db.delete(project)
+        db.commit()
+        
+        return {"message": "Project deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting project: {str(e)}"
+        )
 
 
 @router.post("/{project_id}/stages/{project_stage_id}/purchase-material/", response_model=ProjectMaterialPurchaseResponse)
