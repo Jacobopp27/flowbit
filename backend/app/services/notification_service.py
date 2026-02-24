@@ -32,7 +32,7 @@ def create_notification(
 
 
 def notify_stage_ready(db: Session, project_stage_id: int):
-    """Notify workers when a stage becomes ready to start (Type 1)"""
+    """Notify workers and admins when a stage becomes ready to start (Type 1)"""
     project_stage = db.query(ProjectStage).filter(
         ProjectStage.id == project_stage_id
     ).first()
@@ -46,12 +46,33 @@ def notify_stage_ready(db: Session, project_stage_id: int):
         return
     
     project = project_stage.project
+    notified_users = set()  # Avoid duplicate notifications
     
-    # Get workers who have access to this stage type
+    # 1. Notify company admin
+    admin = db.query(User).filter(
+        User.company_id == project.company_id,
+        User.role.in_(["COMPANY_ADMIN", "SUPER_ADMIN"]),
+        User.is_active == True
+    ).first()
+    
+    if admin:
+        create_notification(
+            db=db,
+            user_id=admin.id,
+            notification_type="STAGE_READY",
+            title=f"Etapa desbloqueada: {stage.name}",
+            message=f"La etapa '{stage.name}' del proyecto '{project.project_name}' ahora está lista para comenzar. Cliente: {project.client_name}",
+            project_id=project.id,
+            project_stage_id=project_stage_id
+        )
+        notified_users.add(admin.id)
+    
+    # 2. Notify workers who have access to this stage type
     workers = db.query(User).join(UserStageAccess).filter(
         UserStageAccess.stage_id == stage.id,
         User.company_id == project.company_id,
-        User.is_active == True
+        User.is_active == True,
+        User.id.notin_(notified_users)
     ).all()
     
     for worker in workers:
@@ -59,7 +80,7 @@ def notify_stage_ready(db: Session, project_stage_id: int):
             db=db,
             user_id=worker.id,
             notification_type="STAGE_READY",
-            title=f"Nueva etapa lista: {stage.name}",
+            title=f"Nueva etapa disponible: {stage.name}",
             message=f"El proyecto '{project.project_name}' está listo para comenzar en la etapa '{stage.name}'. Cliente: {project.client_name}",
             project_id=project.id,
             project_stage_id=project_stage_id

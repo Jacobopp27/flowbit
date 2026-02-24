@@ -570,6 +570,7 @@ def update_my_work_stage(
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Validate status changes
+    new_status = None
     if data.status:
         new_status = StageStatus(data.status)
         
@@ -598,6 +599,11 @@ def update_my_work_stage(
     
     db.commit()
     db.refresh(project_stage)
+    
+    # Auto-update stage statuses based on dependencies
+    # This will unlock stages that are waiting for this one to complete
+    if data.status and new_status == StageStatus.DONE:
+        auto_update_stage_status(db, project_stage.project_id)
     
     stage = db.query(Stage).filter(Stage.id == project_stage.stage_id).first()
     
@@ -983,17 +989,36 @@ def can_stage_be_ready(db: Session, project_stage_id: int) -> bool:
     Check if a stage can be set to READY based on dependencies.
     Returns True if all dependencies are DONE.
     """
+    print(f"  🔍 Checking dependencies for project_stage_id={project_stage_id}")
+    
     dependencies = db.query(ProjectStageDependency).filter(
         ProjectStageDependency.stage_id == project_stage_id
     ).all()
     
+    print(f"  📊 Found {len(dependencies)} dependencies")
+    
+    if not dependencies:
+        print(f"  ✅ No dependencies, stage can be ready")
+        return True
+    
     for dep in dependencies:
+        print(f"    🔍 Checking dependency: stage_id={dep.stage_id}, depends_on={dep.depends_on_stage_id}")
+        
         dep_stage = db.query(ProjectStage).filter(
             ProjectStage.id == dep.depends_on_stage_id
         ).first()
-        if not dep_stage or dep_stage.status != StageStatus.DONE:
+        
+        if not dep_stage:
+            print(f"    ❌ Dependency stage {dep.depends_on_stage_id} not found!")
+            return False
+        
+        print(f"    📌 Dependency stage {dep.depends_on_stage_id} status: {dep_stage.status}")
+        
+        if dep_stage.status != StageStatus.DONE:
+            print(f"    ❌ Dependency stage {dep.depends_on_stage_id} is not DONE")
             return False
     
+    print(f"  ✅ All dependencies are DONE!")
     return True
 
 
@@ -1050,18 +1075,75 @@ def auto_update_stage_status(db: Session, project_id: int):
     """
     from app.services import notification_service
     
+    print(f"🔍 auto_update_stage_status called for project {project_id}")
+    
     stages = db.query(ProjectStage).filter(
         ProjectStage.project_id == project_id,
         ProjectStage.status == StageStatus.BLOCKED
     ).all()
     
+    print(f"📊 Found {len(stages)} blocked stages")
+    
     for stage in stages:
+        print(f"🔍 Checking stage {stage.id} ({stage.stage.name if stage.stage else 'Unknown'})")
+        
         if can_stage_be_ready(db, stage.id):
+            print(f"✅ Stage {stage.id} is ready to unlock!")
             stage.status = StageStatus.READY
+            db.commit()
             # 🔔 Notify workers that this stage is now ready (Type 1)
             notification_service.notify_stage_ready(db, stage.id)
+        else:
+            print(f"❌ Stage {stage.id} still has incomplete dependencies")
+    
+    print(f"✅ auto_update_stage_status completed for project {project_id}")
     
     db.commit()
+
+
+@router.post("/{project_id}/refresh-stage-status")
+def refresh_stage_status(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(check_admin_or_company_admin)
+):
+    """
+    Manually refresh stage statuses for a project.
+    Useful for unlocking stages that should be ready but are still blocked.
+    """
+    if not current_user.company_id:
+        raise HTTPException(status_code=403, detail="User must belong to a company")
+    
+    # Verify project belongs to company
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.company_id == current_user.company_id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get blocked stages count before
+    blocked_before = db.query(ProjectStage).filter(
+        ProjectStage.project_id == project_id,
+        ProjectStage.status == StageStatus.BLOCKED
+    ).count()
+    
+    # Force update all blocked stages
+    auto_update_stage_status(db, project_id)
+    
+    # Get blocked stages count after
+    blocked_after = db.query(ProjectStage).filter(
+        ProjectStage.project_id == project_id,
+        ProjectStage.status == StageStatus.BLOCKED
+    ).count()
+    
+    return {
+        "message": "Stage statuses refreshed successfully",
+        "blocked_before": blocked_before,
+        "blocked_after": blocked_after,
+        "unlocked": blocked_before - blocked_after
+    }
 
 
 @router.put("/{project_id}/stages/{stage_id}", response_model=ProjectStageResponse)
@@ -1108,11 +1190,14 @@ def update_project_stage(
     
     # Capture old status for logging
     old_status = project_stage.status
+    new_status_value = None
     
     # Update fields
     if stage_data.status is not None:
+        new_status_value = StageStatus(stage_data.status) if isinstance(stage_data.status, str) else stage_data.status
+        
         # Validate: Cannot change status if stage is BLOCKED (unless setting to BLOCKED)
-        if old_status == StageStatus.BLOCKED and stage_data.status != StageStatus.BLOCKED:
+        if old_status == StageStatus.BLOCKED and new_status_value != StageStatus.BLOCKED:
             # Check if dependencies are met
             if not can_stage_be_ready(db, project_stage.id):
                 raise HTTPException(
@@ -1121,17 +1206,17 @@ def update_project_stage(
                 )
         
         # Auto-register actual_started_at when moving to IN_PROGRESS for the first time
-        if stage_data.status == StageStatus.IN_PROGRESS and old_status != StageStatus.IN_PROGRESS:
+        if new_status_value == StageStatus.IN_PROGRESS and old_status != StageStatus.IN_PROGRESS:
             if not project_stage.actual_started_at:
                 from datetime import datetime
                 project_stage.actual_started_at = datetime.now()
         
         # Auto-register actual_done_at when moving to DONE
-        if stage_data.status == StageStatus.DONE and old_status != StageStatus.DONE:
+        if new_status_value == StageStatus.DONE and old_status != StageStatus.DONE:
             from datetime import datetime
             project_stage.actual_done_at = datetime.now()
         
-        project_stage.status = stage_data.status
+        project_stage.status = new_status_value
     if stage_data.qty_required is not None:
         project_stage.qty_required = stage_data.qty_required
     if stage_data.qty_done is not None:
@@ -1149,20 +1234,20 @@ def update_project_stage(
     db.refresh(project_stage)
     
     # Log status change if status was updated
-    if stage_data.status is not None and old_status != stage_data.status:
+    if stage_data.status is not None and old_status != new_status_value:
         event_log = StageEventLog(
             project_stage_id=project_stage.id,
             event_type="status_change",
             old_value=old_status.value,
-            new_value=stage_data.status.value,
+            new_value=new_status_value.value,
             user_id=current_user.id,
-            notes=f"Status changed from {old_status.value} to {stage_data.status.value}"
+            notes=f"Status changed from {old_status.value} to {new_status_value.value}"
         )
         db.add(event_log)
         db.commit()
         
         # If this stage was marked as DONE, check if other stages can become READY
-        if stage_data.status == StageStatus.DONE:
+        if new_status_value == StageStatus.DONE:
             auto_update_stage_status(db, project_id)
             # Check if all stages are done, and if so, add products to inventory
             check_and_add_to_inventory(db, project_id)
