@@ -186,7 +186,7 @@ export function Users() {
         title: 'Éxito',
         description: 'Usuario desactivado correctamente',
       });
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast({
         title: 'Error',

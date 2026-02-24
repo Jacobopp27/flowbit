@@ -22,7 +22,6 @@ import { ProductsInventory } from '@/pages/admin/ProductsInventory';
 
 // Worker pages
 import { MyWork } from '@/pages/worker/MyWork';
-import { WorkStageDetail } from '@/pages/worker/WorkStageDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

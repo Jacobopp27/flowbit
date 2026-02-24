@@ -22,6 +22,7 @@ export interface Product {
 }
 
 export interface ProductCreate {
+  name: string;
   product_name: string;
   sku?: string;
   bom_items: ProductBOMItemCreate[];

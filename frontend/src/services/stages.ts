@@ -20,6 +20,7 @@ export interface Stage {
 
 export interface StageCreate {
   name: string;
+  stage_name: string;
   description?: string;
   color?: string;
   is_purchasing_stage?: boolean;

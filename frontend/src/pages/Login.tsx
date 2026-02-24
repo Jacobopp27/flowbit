@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Package2, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import flowbitLogo from '@/assets/flowbit-logoblanco.png';
 
 export default function Login() {

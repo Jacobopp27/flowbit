@@ -9,7 +9,6 @@ export function WorkStageDetail() {
   const { projectStageId } = useParams();
   const [stageDetail, setStageDetail] = useState<ProjectStageDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const [qtyDone, setQtyDone] = useState(0);
 
   useEffect(() => {
@@ -30,37 +29,6 @@ export function WorkStageDetail() {
     }
   };
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    if (!projectStageId) return;
-    
-    setUpdating(true);
-    try {
-      await projectService.updateMyWorkStage(parseInt(projectStageId), { status: newStatus });
-      await loadStageDetail();
-    } catch (error: any) {
-      console.error('Error updating status:', error);
-      alert(error.response?.data?.detail || 'Error al actualizar el estado');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleUpdateQty = async () => {
-    if (!projectStageId) return;
-    
-    setUpdating(true);
-    try {
-      await projectService.updateMyWorkStage(parseInt(projectStageId), { qty_done: qtyDone });
-      await loadStageDetail();
-      alert('Cantidad actualizada correctamente');
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      alert('Error al actualizar la cantidad');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -76,10 +44,6 @@ export function WorkStageDetail() {
       </div>
     );
   }
-
-  const progress = stageDetail.qty_required 
-    ? Math.round((stageDetail.qty_done / stageDetail.qty_required) * 100)
-    : 0;
 
   return (
     <div className="space-y-6">
