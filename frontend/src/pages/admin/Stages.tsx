@@ -62,7 +62,7 @@ export function Stages() {
     } else {
       setEditingStage(null);
       setFormData({
-        stage_name: '',
+        name: '',
         description: '',
         color: '#3b82f6',
         is_purchasing_stage: false,

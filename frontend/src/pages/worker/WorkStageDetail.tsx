@@ -9,7 +9,6 @@ export function WorkStageDetail() {
   const { projectStageId } = useParams();
   const [stageDetail, setStageDetail] = useState<ProjectStageDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [qtyDone, setQtyDone] = useState(0);
 
   useEffect(() => {
     if (projectStageId) {
@@ -21,7 +20,6 @@ export function WorkStageDetail() {
     try {
       const detail = await projectService.getMyWorkStageDetail(parseInt(projectStageId!));
       setStageDetail(detail as any);
-      setQtyDone(detail.qty_done || 0);
     } catch (error) {
       console.error('Error loading stage detail:', error);
     } finally {
