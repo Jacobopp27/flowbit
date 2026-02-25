@@ -20,6 +20,9 @@ import { Purchases } from '@/pages/admin/Purchases';
 import { MaterialsInventory } from '@/pages/admin/MaterialsInventory';
 import { ProductsInventory } from '@/pages/admin/ProductsInventory';
 
+// Landing
+import { Landing } from '@/pages/Landing';
+
 // Worker pages
 import { MyWork } from '@/pages/worker/MyWork';
 
@@ -49,10 +52,11 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
 
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Navigate
