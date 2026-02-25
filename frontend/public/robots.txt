@@ -1,0 +1,14 @@
+# robots.txt for Flowbit
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /admin/
+Disallow: /worker/
+Disallow: /viewer/
+
+# Sitemap
+Sitemap: https://flowbiit.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

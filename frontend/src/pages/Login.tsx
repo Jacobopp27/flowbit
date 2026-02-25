@@ -20,7 +20,7 @@ export default function Login() {
 
     try {
       await login(username, password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
       const errorMessage = err.response?.data?.detail || err.message || 'Error al iniciar sesión';
