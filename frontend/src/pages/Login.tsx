@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,24 @@ import flowbitLogo from '@/assets/flowbit-logoblanco.png';
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Cargar usuario y contraseña guardados al montar el componente
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('flowbit_remember_user');
+    const savedPassword = localStorage.getItem('flowbit_remember_pass');
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setRememberMe(true);
+    }
+    if (savedPassword) {
+      setPassword(savedPassword);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +34,16 @@ export default function Login() {
 
     try {
       await login(username, password);
+      
+      // Guardar o eliminar credenciales según checkbox
+      if (rememberMe) {
+        localStorage.setItem('flowbit_remember_user', username);
+        localStorage.setItem('flowbit_remember_pass', password);
+      } else {
+        localStorage.removeItem('flowbit_remember_user');
+        localStorage.removeItem('flowbit_remember_pass');
+      }
+      
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
@@ -118,6 +142,22 @@ export default function Login() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="••••••••"
               />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label 
+                htmlFor="remember-me" 
+                className="ml-2 block text-sm text-gray-700 cursor-pointer select-none"
+              >
+                Recordar usuario
+              </label>
             </div>
 
             {error && (
