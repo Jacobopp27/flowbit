@@ -144,6 +144,40 @@ def delete_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
+    # Check if product is used in any project
+    from app.models.project import ProjectProduct
+    project_usage = db.query(ProjectProduct).filter(
+        ProjectProduct.product_id == product_id
+    ).first()
+    
+    if project_usage:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete product because it is being used in one or more projects"
+        )
+    
+    # Check if product has inventory records
+    from app.models.inventory import ProductInventory, ProductSale
+    inventory_count = db.query(ProductInventory).filter(
+        ProductInventory.product_id == product_id
+    ).count()
+    
+    sales_count = db.query(ProductSale).filter(
+        ProductSale.product_id == product_id
+    ).count()
+    
+    if inventory_count > 0 or sales_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete product because it has inventory or sales records"
+        )
+    
+    # Delete BOM items first (cascade)
+    db.query(ProductBOMItem).filter(
+        ProductBOMItem.product_id == product_id
+    ).delete()
+    
+    # Delete product
     db.delete(product)
     db.commit()
     return {"message": "Product deleted successfully"}
