@@ -23,7 +23,7 @@ export function Products() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductCreate>({
-    product_name: '',
+    name: '',
     sku: '',
     bom_items: [],
   });
@@ -64,7 +64,7 @@ export function Products() {
     if (product) {
       setEditingProduct(product);
       setFormData({
-        product_name: product.name,
+        name: product.name,
         sku: product.sku || '',
         bom_items: product.bom_items.map(item => ({
           material_id: item.material_id,
@@ -74,7 +74,7 @@ export function Products() {
     } else {
       setEditingProduct(null);
       setFormData({
-        product_name: '',
+        name: '',
         sku: '',
         bom_items: [],
       });
@@ -86,7 +86,7 @@ export function Products() {
     setIsDialogOpen(false);
     setEditingProduct(null);
     setFormData({
-      product_name: '',
+      name: '',
       sku: '',
       bom_items: [],
     });
@@ -123,7 +123,7 @@ export function Products() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.product_name.trim()) {
+    if (!formData.name.trim()) {
       toast({
         title: 'Error',
         description: 'El nombre del producto es obligatorio',
@@ -136,7 +136,7 @@ export function Products() {
       setIsSubmitting(true);
       
       const submitData: ProductCreate = {
-        product_name: formData.product_name,
+        name: formData.name,
         sku: formData.sku?.trim() || undefined,
         bom_items: formData.bom_items,
       };
@@ -317,9 +317,9 @@ export function Products() {
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
-                  value={formData.product_name}
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, product_name: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
                   }
                   placeholder="ej. Camiseta, Mochila"
                   required

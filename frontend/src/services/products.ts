@@ -22,13 +22,13 @@ export interface Product {
 }
 
 export interface ProductCreate {
-  product_name: string;
+  name: string;
   sku?: string;
   bom_items: ProductBOMItemCreate[];
 }
 
 export interface ProductUpdate {
-  product_name?: string;
+  name?: string;
   sku?: string;
   bom_items?: ProductBOMItemCreate[];
 }
