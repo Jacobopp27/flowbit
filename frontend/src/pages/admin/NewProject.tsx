@@ -3,16 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import projectService, { ProjectProductItem, ProjectStageCreate } from '../../services/projects';
 import productService, { Product } from '../../services/products';
 import stageService, { Stage } from '../../services/stages';
+import { templatesService, TemplateListResponse } from '@/services/templates';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
+import { useToast } from '@/hooks/use-toast';
 
 export function NewProject() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
-  
+  const [templates, setTemplates] = useState<TemplateListResponse[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+
   const [formData, setFormData] = useState({
     project_name: '',
     client_name: '',
@@ -34,9 +39,10 @@ export function NewProject() {
   const loadData = async () => {
     setLoadingData(true);
     try {
-      const [productsData, stagesData] = await Promise.all([
+      const [productsData, stagesData, templatesData] = await Promise.all([
         productService.getAll(),
         stageService.getAll(),
+        templatesService.listTemplates(),
       ]);
       console.log('Productos cargados:', productsData);
       console.log('Primer producto:', productsData[0]);
@@ -44,11 +50,55 @@ export function NewProject() {
       console.log('Primera etapa:', stagesData[0]);
       setProducts(productsData);
       setStages(stagesData);
+      setTemplates(templatesData);
     } catch (error) {
       console.error('Error loading data:', error);
       alert('Error al cargar productos y etapas');
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const handleApplyTemplate = async (templateId: number) => {
+    if (!templateId) {
+      setSelectedTemplateId(null);
+      return;
+    }
+
+    try {
+      setSelectedTemplateId(templateId);
+      const applied = await templatesService.applyTemplate(templateId, {
+        start_date: formData.start_date || undefined,
+        final_deadline: formData.final_deadline || undefined,
+      });
+
+      // Calculate total quantity from selected products (like handleAddStage does)
+      const totalQty = selectedProducts.reduce((sum, p) => sum + p.quantity, 0);
+
+      // Convert applied stages to ProjectStageCreate format
+      const newStages: ProjectStageCreate[] = applied.stages.map((s) => ({
+        stage_id: s.stage_id,
+        planned_due_date: s.planned_due_date,
+        qty_required: totalQty || undefined,
+        stage_order: s.stage_order,
+        depends_on: s.depends_on,
+        has_operational_cost: s.has_operational_cost,
+        cost_per_unit: s.cost_per_unit,
+        notes: undefined,
+      }));
+
+      setSelectedStages(newStages);
+
+      toast({
+        title: 'Plantilla Aplicada',
+        description: `${applied.stages.length} etapas agregadas automáticamente`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.response?.data?.detail || 'Error al aplicar plantilla',
+      });
     }
   };
 
@@ -395,9 +445,51 @@ export function NewProject() {
             <div className="text-gray-500 text-center py-4">Cargando etapas...</div>
           ) : (
             <>
+              {/* Template Selector */}
+              {templates.length > 0 && (
+                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 mt-1">
+                      <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                        Usar Plantilla (Opcional)
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Selecciona una plantilla para auto-rellenar las etapas con duraciones y configuración predefinida
+                      </p>
+                      <SearchableSelect
+                        value={selectedTemplateId || ''}
+                        onChange={(id) => handleApplyTemplate(Number(id))}
+                        options={[
+                          { value: '', label: 'Sin plantilla - configurar manualmente' },
+                          ...templates.map((t) => ({
+                            value: t.id,
+                            label: `${t.name} (${t.stages_count} etapas)`,
+                          })),
+                        ]}
+                        placeholder="Seleccionar plantilla..."
+                        emptyMessage="No se encontraron plantillas"
+                      />
+                      {selectedTemplateId && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded">
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span>Etapas agregadas automáticamente. Puedes editarlas antes de crear el proyecto.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Agregar Etapa {stages.length > 0 && `(${stages.length} disponibles)`}
+                  Agregar Etapa Manualmente {stages.length > 0 && `(${stages.length} disponibles)`}
                 </label>
                 <SearchableSelect
                   options={stages

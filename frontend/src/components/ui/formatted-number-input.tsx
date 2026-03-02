@@ -2,8 +2,8 @@ import { formatNumber, parseFormattedNumber } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface FormattedNumberInputProps {
-  value: number;
-  onChange: (value: number) => void;
+  value?: number | null;
+  onChange: (value: number | undefined) => void;
   className?: string;
   placeholder?: string;
   min?: number;
@@ -20,10 +20,17 @@ export function FormattedNumberInput({
   step = 0.01,
   required = false,
 }: FormattedNumberInputProps) {
-  const [displayValue, setDisplayValue] = useState(formatNumber(value));
+  const [displayValue, setDisplayValue] = useState(() => {
+    if (value === null || value === undefined || value === 0) return '';
+    return formatNumber(value);
+  });
 
   useEffect(() => {
-    setDisplayValue(formatNumber(value));
+    if (value === null || value === undefined || value === 0) {
+      setDisplayValue('');
+    } else {
+      setDisplayValue(formatNumber(value));
+    }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,15 +39,16 @@ export function FormattedNumberInput({
     // Solo permitir números y comas
     rawValue = rawValue.replace(/[^\d,]/g, '');
 
-    const numericValue = parseFormattedNumber(rawValue);
-    onChange(numericValue);
-
-    // Formatear inmediatamente mientras escribe
+    // Si está vacío, llamar onChange con undefined
     if (rawValue === '' || rawValue === '0') {
       setDisplayValue('');
-    } else {
-      setDisplayValue(formatNumber(numericValue));
+      onChange(undefined);
+      return;
     }
+
+    const numericValue = parseFormattedNumber(rawValue);
+    onChange(numericValue);
+    setDisplayValue(formatNumber(numericValue));
   };
 
   return (
