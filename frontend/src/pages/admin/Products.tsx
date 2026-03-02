@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import productService, { Product, ProductCreate, ProductBOMItemCreate } from '@/services/products';
 import materialService, { Material } from '@/services/materials';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -362,20 +363,18 @@ export function Products() {
                       <div key={index} className="flex gap-2 items-end">
                         <div className="flex-1">
                           <Label htmlFor={`material-${index}`}>Material</Label>
-                          <select
-                            id={`material-${index}`}
+                          <SearchableSelect
                             value={item.material_id}
-                            onChange={(e) =>
-                              updateBOMItem(index, 'material_id', parseInt(e.target.value))
+                            onChange={(value) =>
+                              updateBOMItem(index, 'material_id', Number(value))
                             }
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            {materials.map((material) => (
-                              <option key={material.id} value={material.id}>
-                                {material.name} ({material.unit})
-                              </option>
-                            ))}
-                          </select>
+                            options={materials.map((material) => ({
+                              value: material.id,
+                              label: `${material.name} (${material.unit})`,
+                            }))}
+                            placeholder="Seleccionar material..."
+                            emptyMessage="No se encontraron materiales"
+                          />
                         </div>
                         <div className="w-32">
                           <Label htmlFor={`qty-${index}`}>Cant. por unidad</Label>

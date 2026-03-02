@@ -849,18 +849,18 @@ def create_project(
             ).all()
             
             for bom_item, material in bom_items:
-                qty_for_this_product = bom_item.qty_per_unit * product_item.quantity
-                
+                qty_for_this_product = (Decimal(str(bom_item.qty_per_unit)) * Decimal(str(product_item.quantity))).quantize(Decimal('0.01'))
+
                 if material.id not in material_totals:
-                    material_totals[material.id] = 0
-                material_totals[material.id] += qty_for_this_product
+                    material_totals[material.id] = Decimal(0)
+                material_totals[material.id] = (material_totals[material.id] + qty_for_this_product).quantize(Decimal('0.01'))
         
         # Create material requirements
         for material_id, qty_total in material_totals.items():
             material_req = ProjectMaterialRequirement(
                 project_id=new_project.id,
                 material_id=material_id,
-                qty_per_unit=qty_total / total_sum,  # Average per unit based on total products
+                qty_per_unit=(Decimal(str(qty_total)) / Decimal(str(total_sum))).quantize(Decimal('0.01')),  # Average per unit based on total products
                 qty_total=qty_total,
                 qty_available=0,
                 qty_to_buy=qty_total,
@@ -1319,7 +1319,8 @@ def update_material_requirement(
         requirement.qty_available = req_data.qty_available
     
     # Recalculate qty_to_buy
-    requirement.qty_to_buy = max(0, requirement.qty_total - requirement.qty_available)
+    qty_to_buy = (Decimal(str(requirement.qty_total)) - Decimal(str(requirement.qty_available))).quantize(Decimal('0.01'))
+    requirement.qty_to_buy = max(Decimal(0), qty_to_buy)
     
     db.commit()
     db.refresh(requirement)
@@ -1860,6 +1861,8 @@ def get_project_stage_detail(
                     ProjectMaterialPurchase.material_id == material.id
                 ).scalar() or 0
                 
+                qty_remaining = (Decimal(str(total_needed)) - Decimal(str(purchased))).quantize(Decimal('0.01'))
+
                 materials_info.append({
                     'material_id': material.id,
                     'material_name': material.name,
@@ -1867,7 +1870,7 @@ def get_project_stage_detail(
                     'qty_per_unit': float(bom.qty_per_unit),
                     'qty_needed': float(total_needed),
                     'qty_purchased': float(purchased),
-                    'qty_remaining': float(total_needed - purchased),
+                    'qty_remaining': float(qty_remaining),
                     'inventory_available': float(material.qty_available),
                 })
     

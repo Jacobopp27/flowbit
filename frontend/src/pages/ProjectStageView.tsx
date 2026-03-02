@@ -22,6 +22,11 @@ export function ProjectStageView() {
     notes: string;
   } | null>(null);
 
+  // Helper function to check if quantity is complete (with tolerance for floating point errors)
+  const isQuantityComplete = (remaining: number) => {
+    return Math.abs(remaining) < 0.01; // Tolerance of 0.01
+  };
+
   useEffect(() => {
     loadStageDetail();
     loadEventLog();
@@ -450,7 +455,7 @@ export function ProjectStageView() {
                       <td className="text-right py-3 px-4">{material.qty_needed.toFixed(2)}</td>
                       <td className="text-right py-3 px-4 text-blue-600">{material.qty_purchased.toFixed(2)}</td>
                       <td className={`text-right py-3 px-4 font-semibold ${
-                        material.qty_remaining > 0 ? 'text-orange-600' : 'text-green-600'
+                        !isQuantityComplete(material.qty_remaining) ? 'text-orange-600' : 'text-green-600'
                       }`}>
                         {material.qty_remaining.toFixed(2)}
                       </td>
@@ -460,7 +465,7 @@ export function ProjectStageView() {
                         {material.inventory_available.toFixed(2)}
                       </td>
                       <td className="text-right py-3 px-4">
-                        {stageDetail.stage_status === 'IN_PROGRESS' && material.qty_remaining > 0 && (
+                        {stageDetail.stage_status === 'IN_PROGRESS' && !isQuantityComplete(material.qty_remaining) && (
                           <button
                             onClick={() => handlePurchaseMaterial(material.material_id)}
                             className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -469,7 +474,7 @@ export function ProjectStageView() {
                             {material.inventory_available >= material.qty_remaining ? 'Usar del Inventario' : 'Sin Stock'}
                           </button>
                         )}
-                        {stageDetail.stage_status !== 'IN_PROGRESS' && material.qty_remaining > 0 && (
+                        {stageDetail.stage_status !== 'IN_PROGRESS' && !isQuantityComplete(material.qty_remaining) && (
                           <span className="text-sm text-gray-500 italic">Solo en progreso</span>
                         )}
                       </td>

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import projectService, { ProjectProductItem, ProjectStageCreate } from '../../services/projects';
 import productService, { Product } from '../../services/products';
 import stageService, { Stage } from '../../services/stages';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 
 export function NewProject() {
   const navigate = useNavigate();
@@ -287,14 +289,12 @@ export function NewProject() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Precio de Venta
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.sale_price || ''}
-                onChange={(e) => setFormData({ ...formData, sale_price: e.target.value ? parseFloat(e.target.value) : undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <FormattedNumberInput
+                value={formData.sale_price || 0}
+                onChange={(val) => setFormData({ ...formData, sale_price: val > 0 ? val : undefined })}
                 placeholder="0.00"
+                min={0}
+                step={0.01}
               />
             </div>
 
@@ -337,24 +337,16 @@ export function NewProject() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Agregar Producto {products.length > 0 && `(${products.length} disponibles)`}
                 </label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleAddProduct(parseInt(e.target.value));
-                      e.target.value = '';
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Seleccionar producto...</option>
-                  {products
+                <SearchableSelect
+                  options={products
                     .filter(p => !selectedProducts.find(sp => sp.product_id === p.id))
-                    .map(product => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
-                      </option>
-                    ))}
-                </select>
+                    .map(product => ({ value: product.id, label: product.name }))}
+                  onChange={(id) => {
+                    handleAddProduct(Number(id));
+                  }}
+                  placeholder="Seleccionar producto..."
+                  emptyMessage="No se encontraron productos"
+                />
                 {products.length === 0 && (
                   <p className="text-sm text-amber-600 mt-2">
                     No hay productos disponibles. Crea productos primero en la sección de Productos.
@@ -407,24 +399,16 @@ export function NewProject() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Agregar Etapa {stages.length > 0 && `(${stages.length} disponibles)`}
                 </label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleAddStage(parseInt(e.target.value));
-                      e.target.value = '';
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Seleccionar etapa...</option>
-                  {stages
+                <SearchableSelect
+                  options={stages
                     .filter(s => !selectedStages.find(ss => ss.stage_id === s.id))
-                    .map(stage => (
-                      <option key={stage.id} value={stage.id}>
-                        {stage.name}
-                      </option>
-                    ))}
-                </select>
+                    .map(stage => ({ value: stage.id, label: stage.name }))}
+                  onChange={(id) => {
+                    handleAddStage(Number(id));
+                  }}
+                  placeholder="Seleccionar etapa..."
+                  emptyMessage="No se encontraron etapas"
+                />
                 {stages.length === 0 && (
                   <p className="text-sm text-amber-600 mt-2">
                     No hay etapas disponibles. Crea etapas primero en la sección de Etapas.
@@ -540,20 +524,18 @@ export function NewProject() {
                         <label className="block text-sm text-gray-600 mb-1">
                           Costo por Unidad
                         </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={item.cost_per_unit || ''}
-                          onChange={(e) =>
+                        <FormattedNumberInput
+                          value={item.cost_per_unit || 0}
+                          onChange={(val) =>
                             handleStageChange(
                               item.stage_id,
                               'cost_per_unit',
-                              e.target.value ? parseFloat(e.target.value) : undefined
+                              val > 0 ? val : undefined
                             )
                           }
-                          className="w-full px-2 py-1 border border-gray-300 rounded"
                           placeholder="0.00"
+                          min={0}
+                          step={0.01}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Este costo se multiplicará por la cantidad producida para calcular el costo total de esta etapa.

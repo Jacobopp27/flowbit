@@ -101,7 +101,7 @@ class ProductBOMItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
     material_id = Column(Integer, ForeignKey("materials.id"), nullable=False, index=True)
-    qty_per_unit = Column(Float, nullable=False)
+    qty_per_unit = Column(Numeric(10, 2), nullable=False)
     
     # Relationships
     product = relationship("Product", back_populates="bom_items")
