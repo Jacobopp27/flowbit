@@ -5,6 +5,8 @@ import supplierService, { Supplier } from '@/services/suppliers';
 import { settingsService } from '@/services/settings';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 
 export function Purchases() {
   const [purchases, setPurchases] = useState<MaterialPurchase[]>([]);
@@ -181,53 +183,53 @@ export function Purchases() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Material *
                 </label>
-                <select
-                  value={formData.material_id}
-                  onChange={(e) => setFormData({ ...formData, material_id: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value={0}>Seleccionar material...</option>
-                  {materials.map((material) => (
-                    <option key={material.id} value={material.id}>
-                      {material.name} ({material.unit})
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={formData.material_id || 0}
+                  onChange={(value) => setFormData({ ...formData, material_id: Number(value) })}
+                  options={[
+                    { value: 0, label: 'Seleccionar material...' },
+                    ...materials.map((material) => ({
+                      value: material.id,
+                      label: `${material.name} (${material.unit})`,
+                    }))
+                  ]}
+                  placeholder="Seleccionar material..."
+                  emptyMessage="No se encontraron materiales"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Proveedor
                 </label>
-                <select
+                <SearchableSelect
                   value={formData.supplier_id || ''}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    supplier_id: e.target.value ? Number(e.target.value) : undefined 
+                  onChange={(value) => setFormData({
+                    ...formData,
+                    supplier_id: value ? Number(value) : undefined
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Sin proveedor</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Sin proveedor' },
+                    ...suppliers.map((supplier) => ({
+                      value: supplier.id,
+                      label: supplier.name,
+                    }))
+                  ]}
+                  placeholder="Seleccionar proveedor..."
+                  emptyMessage="No se encontraron proveedores"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cantidad *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                <FormattedNumberInput
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(val) => setFormData({ ...formData, quantity: val })}
+                  placeholder="0.00"
+                  min={0.01}
+                  step={0.01}
                   required
                 />
               </div>
@@ -236,13 +238,12 @@ export function Purchases() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Costo Unitario *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <FormattedNumberInput
                   value={formData.unit_cost}
-                  onChange={(e) => setFormData({ ...formData, unit_cost: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(val) => setFormData({ ...formData, unit_cost: val })}
+                  placeholder="0.00"
+                  min={0}
+                  step={0.01}
                   required
                 />
               </div>

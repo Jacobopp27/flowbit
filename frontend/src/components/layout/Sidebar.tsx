@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Users, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Users,
   Boxes,
   Package,
   Layers,
@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   ShoppingCart,
   Warehouse,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,6 +37,12 @@ const navItems: NavItem[] = [
     title: 'Proyectos',
     href: '/admin/projects',
     icon: FolderKanban,
+    role: 'ADMIN',
+  },
+  {
+    title: 'Plantillas',
+    href: '/admin/templates',
+    icon: FileText,
     role: 'ADMIN',
   },
   {

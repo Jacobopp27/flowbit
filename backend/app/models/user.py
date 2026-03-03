@@ -31,6 +31,7 @@ class Company(Base):
     materials = relationship("Material", back_populates="company")
     products = relationship("Product", back_populates="company")
     projects = relationship("Project", back_populates="company")
+    project_templates = relationship("ProjectTemplate", back_populates="company")
 
 
 class User(Base):

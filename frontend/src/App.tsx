@@ -19,6 +19,8 @@ import { Settings } from '@/pages/admin/Settings';
 import { Purchases } from '@/pages/admin/Purchases';
 import { MaterialsInventory } from '@/pages/admin/MaterialsInventory';
 import { ProductsInventory } from '@/pages/admin/ProductsInventory';
+import { Templates } from '@/pages/admin/Templates';
+import { TemplateEditor } from '@/pages/admin/TemplateEditor';
 
 // Landing
 import { Landing } from '@/pages/Landing';
@@ -205,6 +207,36 @@ function AppRoutes() {
               <ProtectedRoute>
                 <AppShell role="ADMIN">
                   <ProductsInventory />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <Templates />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates/new"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <TemplateEditor />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <TemplateEditor />
                 </AppShell>
               </ProtectedRoute>
             }

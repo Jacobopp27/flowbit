@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import materialService, { Material, MaterialCreate, MaterialUpdate } from '@/services/materials';
 import supplierService, { Supplier } from '@/services/suppliers';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export function Materials() {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -285,24 +286,24 @@ export function Materials() {
 
               <div className="space-y-2">
                 <Label htmlFor="supplier">Proveedor (Opcional)</Label>
-                <select
-                  id="supplier"
+                <SearchableSelect
                   value={formData.supplier_id || ''}
-                  onChange={(e) =>
-                    setFormData({ 
-                      ...formData, 
-                      supplier_id: e.target.value ? parseInt(e.target.value) : undefined 
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      supplier_id: value ? Number(value) : undefined
                     })
                   }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="">Sin proveedor</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Sin proveedor' },
+                    ...suppliers.map((supplier) => ({
+                      value: supplier.id,
+                      label: supplier.name,
+                    }))
+                  ]}
+                  placeholder="Seleccionar proveedor..."
+                  emptyMessage="No se encontraron proveedores"
+                />
                 <p className="text-xs text-muted-foreground">
                   Selecciona el proveedor para este material
                 </p>

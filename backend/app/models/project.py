@@ -91,10 +91,10 @@ class ProjectMaterialRequirement(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
     material_id = Column(Integer, ForeignKey("materials.id"), nullable=False, index=True)
     
-    qty_per_unit = Column(Float, nullable=False)
-    qty_total = Column(Float, nullable=False)
-    qty_available = Column(Float, nullable=False, default=0)
-    qty_to_buy = Column(Float, nullable=False)
+    qty_per_unit = Column(Numeric(10, 2), nullable=False)
+    qty_total = Column(Numeric(10, 2), nullable=False)
+    qty_available = Column(Numeric(10, 2), nullable=False, default=0)
+    qty_to_buy = Column(Numeric(10, 2), nullable=False)
     
     # Relationships
     project = relationship("Project", back_populates="material_requirements")
@@ -150,8 +150,8 @@ class ProjectMaterialPurchase(Base):
     material_id = Column(Integer, ForeignKey("materials.id"), nullable=False, index=True)
     supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=True, index=True)
     
-    quantity_purchased = Column(Float, nullable=False)
-    unit_cost = Column(Float, nullable=False)
+    quantity_purchased = Column(Numeric(10, 2), nullable=False)
+    unit_cost = Column(Numeric(10, 2), nullable=False)
     purchase_date = Column(Date, nullable=False)
     notes = Column(Text, nullable=True)
     
