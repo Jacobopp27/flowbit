@@ -31,13 +31,19 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     debug=settings.DEBUG,
-    lifespan=lifespan
+    lifespan=lifespan,
+    root_path="/api",
 )
 
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://flowbiit.com",
+        "https://www.flowbiit.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
