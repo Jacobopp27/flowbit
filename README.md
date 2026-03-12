@@ -1,4 +1,4 @@
-Flowbiit
+**Flowbiit**
 
 Flowbiit is a production workflow management platform designed to help manufacturing teams organize operations, track orders, and manage production stages in a centralized system.
 
@@ -8,7 +8,7 @@ The platform is designed to simplify production visibility and improve coordinat
 
 ⸻
 
-Problem
+**Problem**
 
 Manufacturing teams often manage production using a combination of:
 	•	spreadsheets
@@ -26,7 +26,7 @@ Flowbiit was created to solve these problems by providing a centralized operatio
 
 ⸻
 
-Solution
+**Solution**
 
 Flowbiit provides a digital workflow for managing production.
 
@@ -39,8 +39,8 @@ With Flowbiit teams can:
 
 ⸻
 
-Key Features
-
+**Key Features
+**
 • Order management system
 • Production stage tracking
 • Operational dashboards
@@ -50,7 +50,7 @@ Key Features
 
 ⸻
 
-Architecture
+**Architecture**
 
 The platform follows a modern web architecture:
 
@@ -68,7 +68,7 @@ Cloud deployment with scalable API services.
 
 ⸻
 
-Tech Stack
+**Tech Stack**
 
 Frontend
 	•	React
@@ -87,7 +87,7 @@ Infrastructure
 	•	Nginx
 	•	VPS deployment
 
-Project Structure
+**Project Structure**
 flowbiit
 │
 ├── frontend
@@ -105,7 +105,7 @@ flowbiit
     ├── nginx
     ├── scripts
 
-Vision
+**Vision**
 
 Flowbiit aims to become an operational system for manufacturing companies that need better visibility and coordination in their production workflows.
 
@@ -121,7 +121,7 @@ New features and improvements are continuously being implemented as the platform
 
 ⸻
 
-Author
+**Author**
 
 Jacobo Posada
 Full Stack Developer
