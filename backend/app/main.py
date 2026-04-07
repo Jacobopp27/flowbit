@@ -14,6 +14,7 @@ from app.api.purchases import router as purchases_router
 from app.api.inventory import router as inventory_router
 from app.api.notifications import router as notifications_router
 from app.api.templates import router as templates_router
+from app.api.imports import router as imports_router
 from app.tasks.scheduler import start_scheduler, shutdown_scheduler
 
 settings = get_settings()
@@ -63,6 +64,7 @@ app.include_router(purchases_router, prefix="/purchases", tags=["purchases"])
 app.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
 app.include_router(notifications_router)
 app.include_router(templates_router, prefix="/templates", tags=["templates"])
+app.include_router(imports_router, prefix="/import", tags=["import"])
 
 
 @app.get("/")

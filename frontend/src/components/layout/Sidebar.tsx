@@ -12,7 +12,8 @@ import {
   ShoppingCart,
   Warehouse,
   ChevronRight,
-  FileText
+  FileText,
+  FileUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -91,6 +92,12 @@ const navItems: NavItem[] = [
     title: 'Inventario PT',
     href: '/admin/inventory/products',
     icon: Warehouse,
+    role: 'ADMIN',
+  },
+  {
+    title: 'Importar datos',
+    href: '/admin/import',
+    icon: FileUp,
     role: 'ADMIN',
   },
   {

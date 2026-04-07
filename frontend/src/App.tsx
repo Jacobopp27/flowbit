@@ -21,6 +21,7 @@ import { MaterialsInventory } from '@/pages/admin/MaterialsInventory';
 import { ProductsInventory } from '@/pages/admin/ProductsInventory';
 import { Templates } from '@/pages/admin/Templates';
 import { TemplateEditor } from '@/pages/admin/TemplateEditor';
+import { Import } from '@/pages/admin/Import';
 
 // Landing
 import { Landing } from '@/pages/Landing';
@@ -237,6 +238,16 @@ function AppRoutes() {
               <ProtectedRoute>
                 <AppShell role="ADMIN">
                   <TemplateEditor />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/import"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <Import />
                 </AppShell>
               </ProtectedRoute>
             }
