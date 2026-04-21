@@ -68,7 +68,7 @@ export function TemplateEditor() {
         ...selectedStages,
         {
           stage_id: stageId,
-          duration_days: 1,
+          duration_days: 0,
           stage_order: selectedStages.length,
           has_operational_cost: false,
           cost_per_unit: undefined,
@@ -302,9 +302,9 @@ export function TemplateEditor() {
                         required
                         min="1"
                         max="365"
-                        value={item.duration_days}
+                        value={item.duration_days || ''}
                         onChange={(e) =>
-                          handleStageChange(item.stage_id, 'duration_days', parseInt(e.target.value) || 1)
+                          handleStageChange(item.stage_id, 'duration_days', parseInt(e.target.value) || 0)
                         }
                         className="w-full px-2 py-1 border border-gray-300 rounded"
                       />

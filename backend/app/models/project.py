@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Text, Date, Enum as SQLEnum, Numeric, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Text, Date, Enum as SQLEnum, Numeric, Boolean, JSON
 from sqlalchemy.orm import relationship
 import enum
 from app.database import Base
@@ -11,6 +11,7 @@ class Project(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    quotation_id = Column(Integer, ForeignKey("quotations.id"), nullable=True, index=True)
     project_name = Column(String, nullable=False)
     client_name = Column(String, nullable=False)
     start_date = Column(Date, nullable=True)
@@ -27,6 +28,7 @@ class Project(Base):
     
     # Relationships
     company = relationship("Company", back_populates="projects")
+    quotation = relationship("Quotation", back_populates="projects")
     project_stages = relationship("ProjectStage", back_populates="project", cascade="all, delete-orphan")
     material_requirements = relationship("ProjectMaterialRequirement", back_populates="project", cascade="all, delete-orphan")
     financial_events = relationship("FinancialEvent", back_populates="project")
@@ -63,6 +65,7 @@ class ProjectStage(Base):
     # Quantities
     qty_required = Column(Integer, nullable=False)
     qty_done = Column(Integer, nullable=False, default=0)
+    product_assignments = Column(JSON, nullable=True)  # [{"product_id": 1, "qty_required": 50, "qty_done": 0}]
     
     # Timeline
     planned_due_date = Column(Date, nullable=False)

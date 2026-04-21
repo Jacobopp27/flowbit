@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import date, datetime
 from app.models.stage import StageStatus
 
@@ -8,6 +8,12 @@ class ProjectProductItem(BaseModel):
     """Product with quantity for a project"""
     product_id: int
     quantity: int = Field(..., gt=0)
+
+
+class StageProductAssignment(BaseModel):
+    product_id: int
+    qty_required: int
+    qty_done: Optional[int] = 0
 
 
 class ProjectStageCreate(BaseModel):
@@ -20,6 +26,7 @@ class ProjectStageCreate(BaseModel):
     depends_on: List[int] = []  # List of stage_ids this stage depends on
     has_operational_cost: bool = False
     cost_per_unit: Optional[float] = None
+    product_assignments: Optional[List[StageProductAssignment]] = None
 
 
 class ProjectCreate(BaseModel):
@@ -34,6 +41,7 @@ class ProjectCreate(BaseModel):
     sale_price: Optional[float] = None
     sale_includes_tax: bool = False
     adds_to_inventory: bool = False
+    quotation_id: Optional[int] = None
 
 
 class ProjectUpdate(BaseModel):
@@ -96,7 +104,8 @@ class ProjectStageResponse(BaseModel):
     depends_on: List[int] = []  # List of stage IDs this stage depends on
     has_operational_cost: bool = False
     cost_per_unit: Optional[float] = None
-    
+    product_assignments: Optional[List[StageProductAssignment]] = None
+
     class Config:
         from_attributes = True
 

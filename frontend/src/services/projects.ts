@@ -5,6 +5,12 @@ export interface ProjectProductItem {
   quantity: number;
 }
 
+export interface StageProductAssignment {
+  product_id: number;
+  qty_required: number;
+  qty_done?: number;
+}
+
 export interface ProjectStageCreate {
   stage_id: number;
   planned_due_date: string;
@@ -14,16 +20,20 @@ export interface ProjectStageCreate {
   depends_on: number[];  // List of stage_ids this stage depends on
   has_operational_cost: boolean;
   cost_per_unit?: number;
+  product_assignments?: StageProductAssignment[];
 }
 
 export interface ProjectCreate {
   project_name: string;
   client_name: string;
   start_date: string;
-  final_deadline: string;  notes?: string;  products: ProjectProductItem[];
+  final_deadline: string;
+  notes?: string;
+  products: ProjectProductItem[];
   stages: ProjectStageCreate[];
   sale_price?: number;
   sale_includes_tax: boolean;
+  quotation_id?: number;
 }
 
 export interface ProjectUpdate {
@@ -173,6 +183,7 @@ export interface ProjectStage {
   depends_on: number[];  // List of project_stage_ids this stage depends on
   has_operational_cost: boolean;
   cost_per_unit?: number;
+  product_assignments?: StageProductAssignment[];
 }
 
 export interface ProjectListItem {
@@ -305,6 +316,7 @@ export interface FinancialSummary {
     base_price: number;
     iva_amount: number;
     iva_percentage: number;
+    total: number;
   };
   material_costs: number;
   material_breakdown: Array<{

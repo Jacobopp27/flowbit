@@ -686,7 +686,8 @@ def get_project(
             stage_order=ps.stage_order,
             depends_on=depends_on_ids,
             has_operational_cost=ps.has_operational_cost,
-            cost_per_unit=float(ps.cost_per_unit) if ps.cost_per_unit else None
+            cost_per_unit=float(ps.cost_per_unit) if ps.cost_per_unit else None,
+            product_assignments=ps.product_assignments,
         ))
     
     # Get material requirements
@@ -785,6 +786,7 @@ def create_project(
         sale_price=project_data.sale_price,
         sale_includes_tax=project_data.sale_includes_tax,
         adds_to_inventory=project_data.adds_to_inventory,
+        quotation_id=project_data.quotation_id,
     )
     
     db.add(new_project)
@@ -806,17 +808,23 @@ def create_project(
     stage_id_map = {}  # Map temporary indices to actual project_stage.id
     
     for idx, stage_data in enumerate(project_data.stages):
+        qty = stage_data.qty_required
+        if stage_data.product_assignments:
+            qty = sum(a.qty_required for a in stage_data.product_assignments)
+        if qty is None:
+            qty = total_sum
         project_stage = ProjectStage(
             project_id=new_project.id,
             stage_id=stage_data.stage_id,
             status=StageStatus.BLOCKED,
-            qty_required=stage_data.qty_required if stage_data.qty_required is not None else total_sum,
+            qty_required=qty,
             qty_done=0,
             planned_due_date=stage_data.planned_due_date,
             notes=stage_data.notes,
             stage_order=stage_data.stage_order,
             has_operational_cost=stage_data.has_operational_cost,
             cost_per_unit=stage_data.cost_per_unit,
+            product_assignments=[a.model_dump() for a in stage_data.product_assignments] if stage_data.product_assignments else None,
         )
         db.add(project_stage)
         db.flush()  # Get the ID without committing
@@ -946,17 +954,23 @@ def update_project(
         total_sum = sum(p.quantity for p in project_data.products) if project_data.products else 0
         
         for idx, stage_data in enumerate(project_data.stages):
+            qty = stage_data.qty_required
+            if stage_data.product_assignments:
+                qty = sum(a.qty_required for a in stage_data.product_assignments)
+            if qty is None:
+                qty = total_sum
             project_stage = ProjectStage(
                 project_id=project_id,
                 stage_id=stage_data.stage_id,
                 status=StageStatus.BLOCKED,
-                qty_required=stage_data.qty_required if stage_data.qty_required is not None else total_sum,
+                qty_required=qty,
                 qty_done=0,
                 planned_due_date=stage_data.planned_due_date,
                 notes=stage_data.notes,
                 stage_order=stage_data.stage_order,
                 has_operational_cost=stage_data.has_operational_cost,
                 cost_per_unit=stage_data.cost_per_unit,
+                product_assignments=[a.model_dump() for a in stage_data.product_assignments] if stage_data.product_assignments else None,
             )
             db.add(project_stage)
             db.flush()
@@ -1276,7 +1290,8 @@ def update_project_stage(
         stage_order=project_stage.stage_order,
         depends_on=depends_on_ids,
         has_operational_cost=project_stage.has_operational_cost,
-        cost_per_unit=float(project_stage.cost_per_unit) if project_stage.cost_per_unit else None
+        cost_per_unit=float(project_stage.cost_per_unit) if project_stage.cost_per_unit else None,
+        product_assignments=project_stage.product_assignments,
     )
 
 
@@ -1678,12 +1693,13 @@ def get_project_financial_summary(
     # IVA breakdown if applicable
     iva_breakdown = None
     if project.sale_includes_tax and sale_price > 0:
-        base_price = sale_price / 1.19
-        iva_amount = sale_price - base_price
+        # sale_price es la base sin IVA; el total = base * 1.19
+        iva_amount = sale_price * 0.19
         iva_breakdown = {
-            "base_price": round(base_price, 2),
+            "base_price": round(sale_price, 2),
             "iva_amount": round(iva_amount, 2),
-            "iva_percentage": 19
+            "iva_percentage": 19,
+            "total": round(sale_price + iva_amount, 2),
         }
     
     return {

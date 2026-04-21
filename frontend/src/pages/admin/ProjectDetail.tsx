@@ -264,16 +264,25 @@ export function ProjectDetail() {
               <div className="border rounded-lg p-4 bg-green-50 border-green-200">
                 <div className="text-sm text-gray-600 mb-1">💵 Precio de Venta</div>
                 <div className="text-2xl font-bold text-green-700">
-                  ${financialSummary.sale_price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  {financialSummary.iva_breakdown
+                    ? `$${financialSummary.iva_breakdown.total.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
+                    : `$${financialSummary.sale_price.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
+                  }
                 </div>
                 {financialSummary.iva_breakdown && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    <div>Base: ${financialSummary.iva_breakdown.base_price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
-                    <div>IVA (19%): ${financialSummary.iva_breakdown.iva_amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                  <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                    <div className="flex justify-between gap-4">
+                      <span>Base</span>
+                      <span>${financialSummary.iva_breakdown.base_price.toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>IVA (19%)</span>
+                      <span>${financialSummary.iva_breakdown.iva_amount.toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
+                    </div>
                   </div>
                 )}
                 {!financialSummary.sale_includes_tax && (
-                  <div className="text-xs text-gray-600 mt-1">Sin IVA</div>
+                  <div className="text-xs text-gray-500 mt-1">Sin IVA</div>
                 )}
               </div>
             )}
@@ -413,6 +422,19 @@ export function ProjectDetail() {
                   <div className="font-medium">
                     {stage.qty_done || 0} / {stage.qty_required || 0}
                   </div>
+                  {stage.product_assignments && stage.product_assignments.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-gray-500 mb-1">Por producto:</p>
+                      <div className="space-y-1">
+                        {stage.product_assignments.map(a => (
+                          <div key={a.product_id} className="flex justify-between text-xs text-gray-600">
+                            <span>{project.products.find(p => p.product_id === a.product_id)?.product_name || `Producto ${a.product_id}`}</span>
+                            <span>{(a.qty_done || 0)}/{a.qty_required}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-gray-600">Inicio Real</div>

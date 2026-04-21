@@ -12,6 +12,7 @@ from app.models.project import (
 )
 from app.models.inventory import ProductInventory
 from app.models.purchase import MaterialPurchase
+from app.models.quotation import Quotation, QuotationItem, QuotationStatus
 
 __all__ = [
     "Company",
@@ -33,4 +34,7 @@ __all__ = [
     "ProductInventory",
     "MaterialPurchase",
     "ProjectMaterialPurchase",
+    "Quotation",
+    "QuotationItem",
+    "QuotationStatus",
 ]

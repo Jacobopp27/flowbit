@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import projectService, { ProjectProductItem, ProjectStageCreate } from '../../services/projects';
+import { useNavigate, useLocation } from 'react-router-dom';
+import projectService, { ProjectProductItem, ProjectStageCreate, StageProductAssignment } from '../../services/projects';
 import productService, { Product } from '../../services/products';
 import stageService, { Stage } from '../../services/stages';
 import { templatesService, TemplateListResponse } from '@/services/templates';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function NewProject() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -18,18 +19,34 @@ export function NewProject() {
   const [templates, setTemplates] = useState<TemplateListResponse[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
 
+  // Data pre-filled from a quotation (via router state)
+  const fromQuotation = (location.state as any)?.fromQuotation as {
+    quotation_id: number;
+    project_name: string;
+    client_name: string;
+    final_deadline: string;
+    notes: string;
+    products: ProjectProductItem[];
+    sale_price?: number;
+    sale_includes_tax?: boolean;
+  } | undefined;
+
+  const today = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
-    project_name: '',
-    client_name: '',
-    start_date: '',
-    final_deadline: '',
-    notes: '',
-    sale_price: undefined as number | undefined,
-    sale_includes_tax: true,
+    project_name: fromQuotation?.project_name || '',
+    client_name: fromQuotation?.client_name || '',
+    start_date: today,
+    final_deadline: fromQuotation?.final_deadline || '',
+    notes: fromQuotation?.notes || '',
+    sale_price: fromQuotation?.sale_price ?? (undefined as number | undefined),
+    sale_includes_tax: fromQuotation?.sale_includes_tax ?? true,
     adds_to_inventory: false,
   });
 
-  const [selectedProducts, setSelectedProducts] = useState<ProjectProductItem[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ProjectProductItem[]>(
+    fromQuotation?.products || []
+  );
   const [selectedStages, setSelectedStages] = useState<ProjectStageCreate[]>([]);
 
   useEffect(() => {
@@ -117,7 +134,7 @@ export function NewProject() {
   const handleProductQuantityChange = (productId: number, quantity: number) => {
     setSelectedProducts(
       selectedProducts.map(p =>
-        p.product_id === productId ? { ...p, quantity: Math.max(1, quantity) } : p
+        p.product_id === productId ? { ...p, quantity: Math.max(0, quantity) } : p
       )
     );
   };
@@ -137,9 +154,33 @@ export function NewProject() {
           depends_on: [],
           has_operational_cost: false,
           cost_per_unit: undefined,
+          product_assignments: selectedProducts.map(p => ({
+            product_id: p.product_id,
+            qty_required: p.quantity,
+          })),
         },
       ]);
     }
+  };
+
+  const handleStageProductAssignment = (stageId: number, productId: number, included: boolean, qty: number) => {
+    setSelectedStages(prev => prev.map(s => {
+      if (s.stage_id !== stageId) return s;
+      const current = s.product_assignments || [];
+      let updated: StageProductAssignment[];
+      if (included) {
+        const existing = current.find(a => a.product_id === productId);
+        if (existing) {
+          updated = current.map(a => a.product_id === productId ? { ...a, qty_required: qty } : a);
+        } else {
+          updated = [...current, { product_id: productId, qty_required: qty }];
+        }
+      } else {
+        updated = current.filter(a => a.product_id !== productId);
+      }
+      const totalQty = updated.reduce((sum, a) => sum + (a.qty_required || 0), 0);
+      return { ...s, product_assignments: updated, qty_required: totalQty || undefined };
+    }));
   };
 
   const handleRemoveStage = (stageId: number) => {
@@ -201,11 +242,6 @@ export function NewProject() {
       return;
     }
 
-    if (selectedStages.length === 0) {
-      alert('Debes seleccionar al menos una etapa');
-      return;
-    }
-
     if (selectedStages.some(s => !s.planned_due_date)) {
       alert('Todas las etapas deben tener una fecha planificada');
       return;
@@ -229,6 +265,7 @@ export function NewProject() {
         stages: selectedStages,
         sale_price: formData.sale_price,
         sale_includes_tax: formData.sale_includes_tax,
+        quotation_id: fromQuotation?.quotation_id,
       });
       navigate(`/admin/projects/${project.project_id}`);
     } catch (error) {
@@ -255,12 +292,20 @@ export function NewProject() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <button
-          onClick={() => navigate('/admin/projects')}
+          onClick={() => fromQuotation ? navigate(-1) : navigate('/admin/projects')}
           className="text-blue-600 hover:underline mb-2"
         >
-          ← Volver a proyectos
+          ← {fromQuotation ? 'Volver a la cotización' : 'Volver a proyectos'}
         </button>
         <h1 className="text-3xl font-bold text-gray-800">Nuevo Proyecto</h1>
+        {fromQuotation && (
+          <div className="mt-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+            <span className="text-blue-500 mt-0.5">ℹ</span>
+            <span>
+              Datos pre-cargados desde la cotización. Agrega las etapas del proyecto — puedes dejarlas para después y editarlas desde el detalle del proyecto.
+            </span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -348,17 +393,35 @@ export function NewProject() {
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="sale_includes_tax"
-                checked={formData.sale_includes_tax}
-                onChange={(e) => setFormData({ ...formData, sale_includes_tax: e.target.checked })}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="sale_includes_tax" className="ml-2 block text-sm text-gray-700">
-                El precio incluye IVA (19%)
-              </label>
+            <div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="sale_includes_tax"
+                  checked={formData.sale_includes_tax}
+                  onChange={(e) => setFormData({ ...formData, sale_includes_tax: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="sale_includes_tax" className="ml-2 block text-sm text-gray-700">
+                  Agregar IVA (19%)
+                </label>
+              </div>
+              {formData.sale_includes_tax && formData.sale_price && formData.sale_price > 0 && (
+                <div className="mt-2 ml-6 text-sm text-gray-600 bg-gray-50 rounded-md p-3 space-y-1 border border-gray-200">
+                  <div className="flex justify-between">
+                    <span>Precio base</span>
+                    <span>{formData.sale_price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>IVA (19%)</span>
+                    <span>{Math.round(formData.sale_price * 0.19).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-gray-800 border-t border-gray-200 pt-1">
+                    <span>Total</span>
+                    <span>{Math.round(formData.sale_price * 1.19).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center">
@@ -416,9 +479,9 @@ export function NewProject() {
                     <input
                       type="number"
                       min="1"
-                      value={item.quantity}
+                      value={item.quantity || ''}
                       onChange={(e) =>
-                        handleProductQuantityChange(item.product_id, parseInt(e.target.value) || 1)
+                        handleProductQuantityChange(item.product_id, parseInt(e.target.value) || 0)
                       }
                       className="w-20 px-2 py-1 border border-gray-300 rounded"
                     />
@@ -440,7 +503,9 @@ export function NewProject() {
 
         {/* Etapas */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Etapas del Proyecto *</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Etapas del Proyecto{fromQuotation ? <span className="text-base font-normal text-gray-400 ml-2">(opcional — puedes agregarlas después)</span> : ' *'}
+          </h2>
           {loadingData ? (
             <div className="text-gray-500 text-center py-4">Cargando etapas...</div>
           ) : (
@@ -597,6 +662,78 @@ export function NewProject() {
                     </div>
                   </div>
                   
+                  {/* Product assignments */}
+                  {selectedProducts.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Productos que cubre esta etapa
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600"
+                            checked={selectedProducts.every(sp => !!item.product_assignments?.find(a => a.product_id === sp.product_id))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                selectedProducts.forEach(sp => {
+                                  if (!item.product_assignments?.find(a => a.product_id === sp.product_id)) {
+                                    handleStageProductAssignment(item.stage_id, sp.product_id, true, sp.quantity);
+                                  }
+                                });
+                              } else {
+                                selectedProducts.forEach(sp => {
+                                  handleStageProductAssignment(item.stage_id, sp.product_id, false, 0);
+                                });
+                              }
+                            }}
+                          />
+                          Seleccionar todos
+                        </label>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedProducts.map((sp) => {
+                          const assignment = item.product_assignments?.find(a => a.product_id === sp.product_id);
+                          const isIncluded = !!assignment;
+                          return (
+                            <div key={sp.product_id} className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isIncluded}
+                                onChange={(e) => handleStageProductAssignment(
+                                  item.stage_id, sp.product_id, e.target.checked,
+                                  isIncluded ? (assignment?.qty_required || sp.quantity) : sp.quantity
+                                )}
+                                className="rounded border-gray-300 text-blue-600"
+                              />
+                              <span className="text-sm text-gray-700 flex-1">{getProductName(sp.product_id)}</span>
+                              {isIncluded && (
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs text-gray-500">Cant:</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={assignment?.qty_required || ''}
+                                    onChange={(e) => handleStageProductAssignment(
+                                      item.stage_id, sp.product_id, true,
+                                      parseInt(e.target.value) || 0
+                                    )}
+                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {item.product_assignments && item.product_assignments.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Total: {item.product_assignments.reduce((s, a) => s + a.qty_required, 0)} unidades
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Operational Costs */}
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-2">

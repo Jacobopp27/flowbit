@@ -27,9 +27,18 @@ export function Materials() {
     name: '',
     unit: '',
     supplier_id: undefined,
+    category: undefined,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  const METER_UNITS = ['m', 'mt', 'mts', 'metro', 'metros'];
+  const isMeterUnit = (u: string) => METER_UNITS.includes(u.trim().toLowerCase());
+
+  const handleUnitChange = (unit: string) => {
+    const suggestedCategory = isMeterUnit(unit) ? 'tela' : formData.category;
+    setFormData({ ...formData, unit, category: suggestedCategory });
+  };
 
   useEffect(() => {
     loadMaterials();
@@ -68,6 +77,7 @@ export function Materials() {
         name: material.name,
         unit: material.unit,
         supplier_id: material.supplier_id || undefined,
+        category: material.category || undefined,
       });
     } else {
       setEditingMaterial(null);
@@ -75,6 +85,7 @@ export function Materials() {
         name: '',
         unit: '',
         supplier_id: undefined,
+        category: undefined,
       });
     }
     setIsDialogOpen(true);
@@ -87,6 +98,7 @@ export function Materials() {
       name: '',
       unit: '',
       supplier_id: undefined,
+      category: undefined,
     });
   };
 
@@ -206,10 +218,19 @@ export function Materials() {
                     </div>
                     <div>
                       <h3 className="font-semibold">{material.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Unidad: {material.unit}
+                      <p className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                        <span>Unidad: {material.unit}</span>
+                        {material.category && (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            material.category === 'tela'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {material.category === 'tela' ? '🧵 Tela' : '🔩 Insumo'}
+                          </span>
+                        )}
                         {material.supplier_id && suppliers.length > 0 && (
-                          <span className="ml-2">
+                          <span>
                             • Proveedor: {suppliers.find(s => s.id === material.supplier_id)?.name || 'Desconocido'}
                           </span>
                         )}
@@ -273,14 +294,41 @@ export function Materials() {
                 <Input
                   id="unit"
                   value={formData.unit}
-                  onChange={(e) =>
-                    setFormData({ ...formData, unit: e.target.value })
-                  }
+                  onChange={(e) => handleUnitChange(e.target.value)}
                   placeholder="ej. m, kg, unidad, L"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
                   Unidad de medida (metros, kilogramos, unidades, litros, etc.)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Tipo de material</Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'tela',   label: '🧵 Tela' },
+                    { value: 'insumo', label: '🔩 Insumo / Accesorio' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, category: value })}
+                      className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                        formData.category === value
+                          ? 'border-primary bg-primary/10 font-medium text-primary'
+                          : 'border-input bg-background text-muted-foreground hover:bg-accent'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Las telas se listan por separado en la Orden de Compra.
+                  {isMeterUnit(formData.unit) && formData.category === 'tela' && (
+                    <span className="ml-1 text-amber-600">Sugerido por unidad en metros.</span>
+                  )}
                 </p>
               </div>
 

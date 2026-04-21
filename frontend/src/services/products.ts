@@ -5,6 +5,7 @@ export interface ProductBOMItem {
   product_id: number;
   material_id: number;
   qty_per_unit: number;
+  material_name?: string;
 }
 
 export interface ProductBOMItemCreate {
@@ -19,12 +20,16 @@ export interface Product {
   sku?: string;
   created_at: string;
   bom_items: ProductBOMItem[];
+  has_sizes?: boolean;
+  available_sizes?: string[];
 }
 
 export interface ProductCreate {
   name: string;
   sku?: string;
   bom_items: ProductBOMItemCreate[];
+  has_sizes?: boolean;
+  available_sizes?: string[];
 }
 
 export interface ProductUpdate {

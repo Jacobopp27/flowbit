@@ -20,6 +20,7 @@ class ProductBOMItemUpdate(BaseModel):
 class ProductBOMItemResponse(ProductBOMItemBase):
     id: int
     product_id: int
+    material_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -32,12 +33,16 @@ class ProductBase(BaseModel):
 
 class ProductCreate(ProductBase):
     bom_items: List[ProductBOMItemCreate] = []
+    has_sizes: bool = False
+    available_sizes: Optional[List[str]] = None
 
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     sku: Optional[str] = Field(None, max_length=100)
     bom_items: Optional[List[ProductBOMItemCreate]] = None
+    has_sizes: Optional[bool] = None
+    available_sizes: Optional[List[str]] = None
 
 
 class ProductResponse(ProductBase):
@@ -45,6 +50,8 @@ class ProductResponse(ProductBase):
     company_id: int
     created_at: datetime
     bom_items: List[ProductBOMItemResponse] = []
+    has_sizes: bool = False
+    available_sizes: Optional[List[str]] = None
 
     class Config:
         from_attributes = True

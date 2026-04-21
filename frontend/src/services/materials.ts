@@ -16,12 +16,14 @@ export interface MaterialCreate {
   name: string;
   unit: string;
   supplier_id?: number;
+  category?: string;   // "tela" | "insumo" | undefined
 }
 
 export interface MaterialUpdate {
   name?: string;
   unit?: string;
   supplier_id?: number;
+  category?: string;   // "tela" | "insumo" | undefined
 }
 
 const materialService = {

@@ -22,6 +22,8 @@ import { ProductsInventory } from '@/pages/admin/ProductsInventory';
 import { Templates } from '@/pages/admin/Templates';
 import { TemplateEditor } from '@/pages/admin/TemplateEditor';
 import { Import } from '@/pages/admin/Import';
+import { Quotations } from '@/pages/admin/Quotations';
+import { QuotationDetail } from '@/pages/admin/QuotationDetail';
 
 // Landing
 import { Landing } from '@/pages/Landing';
@@ -48,10 +50,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const role: 'ADMIN' | 'WORKER' =
     user?.role === 'STAGE_WORKER' ? 'WORKER' : 'ADMIN';
+
+  // Wait for auth to resolve before rendering routes — otherwise the catch-all
+  // "*" can match and redirect to /dashboard before protected routes are stable.
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Cargando...</div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
@@ -238,6 +250,26 @@ function AppRoutes() {
               <ProtectedRoute>
                 <AppShell role="ADMIN">
                   <TemplateEditor />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/quotations"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <Quotations />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/quotations/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell role="ADMIN">
+                  <QuotationDetail />
                 </AppShell>
               </ProtectedRoute>
             }

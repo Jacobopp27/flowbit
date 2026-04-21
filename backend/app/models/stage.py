@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Text, Enum as SQLEnum, Boolean, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Text, Enum as SQLEnum, Boolean, Numeric, JSON
 from sqlalchemy.orm import relationship
 import enum
 from app.database import Base
@@ -87,8 +87,10 @@ class Product(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     sku = Column(String, nullable=True)
+    has_sizes = Column(Boolean, nullable=False, default=False)
+    available_sizes = Column(JSON, nullable=True)  # e.g. ["XS","S","M","L","XL"]
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     company = relationship("Company", back_populates="products")
     bom_items = relationship("ProductBOMItem", back_populates="product")

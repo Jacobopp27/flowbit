@@ -11,13 +11,14 @@ class MaterialBase(BaseModel):
 
 
 class MaterialCreate(MaterialBase):
-    pass
+    category: Optional[str] = None   # "tela" | "insumo" | None
 
 
 class MaterialUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     unit: Optional[str] = Field(None, min_length=1, max_length=50)
     supplier_id: Optional[int] = None
+    category: Optional[str] = None   # "tela" | "insumo" | None
 
 
 class MaterialResponse(MaterialBase):

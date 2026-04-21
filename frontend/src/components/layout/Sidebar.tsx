@@ -13,7 +13,8 @@ import {
   Warehouse,
   ChevronRight,
   FileText,
-  FileUp
+  FileUp,
+  ReceiptText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,6 +33,12 @@ const navItems: NavItem[] = [
     title: 'Panel Principal',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
+    role: 'ADMIN',
+  },
+  {
+    title: 'Cotizaciones',
+    href: '/admin/quotations',
+    icon: ReceiptText,
     role: 'ADMIN',
   },
   {
