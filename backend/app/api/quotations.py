@@ -40,6 +40,9 @@ def _quotation_to_out(q: Quotation, db: Session) -> QuotationOut:
         if it.product_id:
             p = db.query(Product).filter(Product.id == it.product_id).first()
             product_name = p.name if p else None
+        # Extract extra_bom stored under the "__extra__" key in material_overrides
+        raw_overrides = dict(it.material_overrides) if it.material_overrides else {}
+        extra_bom = raw_overrides.pop("__extra__", None) or None
         items.append(QuotationItemOut(
             id=it.id,
             quotation_id=it.quotation_id,
@@ -53,7 +56,8 @@ def _quotation_to_out(q: Quotation, db: Session) -> QuotationOut:
             order=it.order,
             product_name=product_name,
             design_image_path=it.design_image_path,
-            material_overrides=it.material_overrides,
+            material_overrides=raw_overrides if raw_overrides else None,
+            extra_bom=extra_bom,
         ))
 
     project_id = None
@@ -149,6 +153,10 @@ def create_quotation(
     db.flush()
 
     for idx, it in enumerate(payload.items):
+        # Merge extra_bom into material_overrides under "__extra__" key (no migration needed)
+        merged_overrides = dict(it.material_overrides) if it.material_overrides else {}
+        if it.extra_bom:
+            merged_overrides["__extra__"] = it.extra_bom
         item = QuotationItem(
             quotation_id=quotation.id,
             product_id=it.product_id,
@@ -159,7 +167,7 @@ def create_quotation(
             unit_price=it.unit_price,
             notes=it.notes,
             order=it.order if it.order is not None else idx,
-            material_overrides=it.material_overrides,
+            material_overrides=merged_overrides if merged_overrides else None,
         )
         db.add(item)
 
@@ -204,6 +212,10 @@ def update_quotation(
         # Delete existing items and replace, preserving design_image_path
         db.query(QuotationItem).filter(QuotationItem.quotation_id == q.id).delete()
         for idx, it in enumerate(payload.items):
+            # Merge extra_bom into material_overrides under "__extra__" key (no migration needed)
+            merged_overrides = dict(it.material_overrides) if it.material_overrides else {}
+            if it.extra_bom:
+                merged_overrides["__extra__"] = it.extra_bom
             item = QuotationItem(
                 quotation_id=q.id,
                 product_id=it.product_id,
@@ -215,7 +227,7 @@ def update_quotation(
                 notes=it.notes,
                 order=it.order if it.order is not None else idx,
                 design_image_path=it.design_image_path,
-                material_overrides=it.material_overrides,
+                material_overrides=merged_overrides if merged_overrides else None,
             )
             db.add(item)
 
@@ -437,6 +449,9 @@ def _build_enriched_items(q: Quotation, db: Session) -> list:
     enriched = []
     for item in q.items:
         bom = []
+        raw_overrides = dict(item.material_overrides) if item.material_overrides else {}
+        extra_bom_entries = raw_overrides.pop("__extra__", []) or []
+
         if item.product_id:
             bom_items = db.query(ProductBOMItem, Material, Supplier).join(
                 Material, ProductBOMItem.material_id == Material.id
@@ -450,17 +465,56 @@ def _build_enriched_items(q: Quotation, db: Session) -> list:
                 else item.sizes_breakdown.get("total", 0)
             )
             for bi, mat, sup in bom_items:
-                overrides = (item.material_overrides or {}).get(str(mat.id), {})
+                ov = raw_overrides.get(str(mat.id), {})
+                if ov.get("removed"):
+                    continue
+                active_mat_id = ov.get("swap_material_id")
+                if active_mat_id and active_mat_id != mat.id:
+                    active_mat = db.query(Material).filter(Material.id == active_mat_id).first()
+                    mat_name = active_mat.name if active_mat else mat.name
+                    mat_unit = active_mat.unit if active_mat else mat.unit
+                    mat_category = (active_mat.category or "") if active_mat else (mat.category or "")
+                    mat_supplier = db.query(Supplier).filter(Supplier.id == (active_mat.supplier_id if active_mat else None)).first() if active_mat else sup
+                else:
+                    mat_name = mat.name
+                    mat_unit = mat.unit
+                    mat_category = mat.category or ""
+                    mat_supplier = sup
+                effective_qty_per_unit = float(ov["qty_per_unit"]) if "qty_per_unit" in ov else float(bi.qty_per_unit)
+                bom.append({
+                    "material": mat_name,
+                    "unit": mat_unit,
+                    "category": mat_category,
+                    "qty_per_unit": effective_qty_per_unit,
+                    "total_qty": effective_qty_per_unit * qty,
+                    "supplier": mat_supplier.name if mat_supplier else None,
+                    "color": ov.get("color", ""),
+                    "code": ov.get("code", ""),
+                })
+
+        # Extra BOM entries added per-quotation
+        if extra_bom_entries:
+            qty = (
+                sum(item.sizes_breakdown.values())
+                if item.has_sizes
+                else item.sizes_breakdown.get("total", 0)
+            )
+            for entry in extra_bom_entries:
+                mat = db.query(Material).filter(Material.id == entry.get("material_id")).first()
+                if not mat:
+                    continue
+                qty_per_unit = float(entry.get("qty_per_unit", 1))
                 bom.append({
                     "material": mat.name,
                     "unit": mat.unit,
                     "category": mat.category or "",
-                    "qty_per_unit": float(bi.qty_per_unit),
-                    "total_qty": float(bi.qty_per_unit) * qty,
-                    "supplier": sup.name if sup else None,
-                    "color": overrides.get("color", ""),
-                    "code": overrides.get("code", ""),
+                    "qty_per_unit": qty_per_unit,
+                    "total_qty": qty_per_unit * qty,
+                    "supplier": None,
+                    "color": entry.get("color", ""),
+                    "code": entry.get("code", ""),
                 })
+
         enriched.append({"item": item, "bom": bom})
     return enriched
 

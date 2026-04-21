@@ -4,6 +4,21 @@ import api from './api';
 
 export type QuotationStatus = 'borrador' | 'enviada' | 'aprobada';
 
+export interface MaterialOverride {
+  color?: string;
+  code?: string;
+  qty_per_unit?: number;     // override the qty from BOM
+  swap_material_id?: number; // use this material instead of original
+  removed?: boolean;         // exclude this material from this quotation
+}
+
+export interface ExtraBomEntry {
+  material_id: number;
+  qty_per_unit: number;
+  color?: string;
+  code?: string;
+}
+
 export interface SizesBreakdown {
   [key: string]: number; // e.g. { "XS": 5, "S": 10 } or { "total": 20 }
 }
@@ -21,7 +36,8 @@ export interface QuotationItem {
   unit_price?: number | null;
   notes?: string;
   order: number;
-  material_overrides?: Record<string, { color?: string; code?: string }> | null;
+  material_overrides?: Record<string, MaterialOverride> | null;
+  extra_bom?: ExtraBomEntry[] | null;
 }
 
 export interface QuotationOut {

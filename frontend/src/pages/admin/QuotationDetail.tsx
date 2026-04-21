@@ -5,8 +5,11 @@ import {
   QuotationOut,
   QuotationItem,
   QuotationStatus,
+  MaterialOverride,
+  ExtraBomEntry,
 } from '../../services/quotations';
 import productService, { Product } from '../../services/products';
+import materialService, { Material } from '../../services/materials';
 import {
   Plus, Trash2, Download, Scissors, ShoppingCart, ClipboardList,
   ChevronDown, Save, ArrowLeft, Loader2, ExternalLink, FileText, ImageIcon,
@@ -77,12 +80,20 @@ export function QuotationDetail() {
   // Per-item upload: key = item.id
   const [uploadingItemImage, setUploadingItemImage] = useState<Record<number, boolean>>({});
 
+  // Catalog search
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [showCatalog, setShowCatalog] = useState(false);
+
   // Meta
   const [quotation, setQuotation] = useState<QuotationOut | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [generatingProject, setGeneratingProject] = useState(false);
+  // Inline new-material form: {itemIdx, name, unit}
+  const [newMatForm, setNewMatForm] = useState<{ itemIdx: number; name: string; unit: string } | null>(null);
+  const [creatingMat, setCreatingMat] = useState(false);
 
   // PDF loading states
   const [dlQuotation, setDlQuotation] = useState(false);
@@ -92,6 +103,7 @@ export function QuotationDetail() {
 
   useEffect(() => {
     productService.getAll().then((p) => setProducts(p));
+    materialService.getAll().then(setMaterials);
     if (!isNew) loadQuotation();
   }, [id]);
 
@@ -261,6 +273,7 @@ export function QuotationDetail() {
         order: idx,
         design_image_path: it.design_image_path || undefined,
         material_overrides: it.material_overrides || undefined,
+        extra_bom: it.extra_bom || undefined,
       })),
     };
   };
@@ -349,6 +362,36 @@ export function QuotationDetail() {
     }
   };
 
+  // ── Create material inline ─────────────────────────────────────────────────
+
+  const handleCreateMaterial = async (itemIdx: number) => {
+    if (!newMatForm || !newMatForm.name.trim() || !newMatForm.unit.trim()) return;
+    setCreatingMat(true);
+    try {
+      const created = await materialService.create({
+        name: newMatForm.name.trim(),
+        unit: newMatForm.unit.trim(),
+      });
+      // Add to local materials list
+      setMaterials((prev) => [...prev, created]);
+      // Append to the item's extra_bom
+      setItems((prev) =>
+        prev.map((it, i) => {
+          if (i !== itemIdx) return it;
+          return {
+            ...it,
+            extra_bom: [...(it.extra_bom || []), { material_id: created.id, qty_per_unit: 1 }],
+          };
+        })
+      );
+      setNewMatForm(null);
+    } catch (err: any) {
+      alert('Error al crear material: ' + (err?.response?.data?.detail || err.message));
+    } finally {
+      setCreatingMat(false);
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -361,6 +404,10 @@ export function QuotationDetail() {
 
   const grandTotal = items.reduce((acc, it) => acc + totalQty(it), 0);
   const ordersGenerated = !!quotation?.project_id;
+
+  const catalogFiltered = products
+    .filter(p => p.name.toLowerCase().includes(catalogSearch.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -589,19 +636,39 @@ export function QuotationDetail() {
               </h2>
               <div className="flex gap-2">
                 {products.length > 0 && (
-                  <select
-                    className="text-sm border rounded-md px-2 py-1 text-gray-600 focus:outline-none"
-                    defaultValue=""
-                    onChange={(e) => {
-                      if (e.target.value) addFromProduct(Number(e.target.value));
-                      e.target.value = '';
-                    }}
-                  >
-                    <option value="" disabled>+ Desde catálogo</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={catalogSearch}
+                      onChange={(e) => { setCatalogSearch(e.target.value); setShowCatalog(true); }}
+                      onFocus={() => setShowCatalog(true)}
+                      onBlur={() => setTimeout(() => setShowCatalog(false), 150)}
+                      placeholder="Buscar en catálogo..."
+                      className="text-sm border rounded-md px-2 py-1 w-44 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    {showCatalog && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border rounded-md shadow-lg z-20 w-56 max-h-52 overflow-y-auto">
+                        {catalogFiltered.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-gray-400">Sin resultados</div>
+                        ) : (
+                          catalogFiltered.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onMouseDown={() => {
+                                addFromProduct(p.id);
+                                setCatalogSearch('');
+                                setShowCatalog(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
+                            >
+                              {p.name}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <button
                   onClick={addItem}
@@ -725,61 +792,245 @@ export function QuotationDetail() {
                       </div>
                     )}
 
-                    {/* Material overrides */}
-                    {item.product_id && (() => {
-                      const prod = products.find(p => p.id === item.product_id);
-                      const bomItems = prod?.bom_items || [];
-                      if (bomItems.length === 0) return null;
+                    {/* BOM editable por cotización */}
+                    {(() => {
+                      const prod = item.product_id ? products.find(p => p.id === item.product_id) : null;
+                      const baseBom = prod?.bom_items || [];
+                      const extraBom: ExtraBomEntry[] = item.extra_bom || [];
+                      if (baseBom.length === 0 && extraBom.length === 0 && !item.product_id) return null;
+
+                      const updateOverride = (materialIdStr: string, patch: Partial<MaterialOverride>) => {
+                        const curr = item.material_overrides || {};
+                        updateItem(idx, {
+                          material_overrides: {
+                            ...curr,
+                            [materialIdStr]: { ...curr[materialIdStr], ...patch },
+                          },
+                        });
+                      };
+
+                      const removeBaseMaterial = (materialIdStr: string) => {
+                        updateOverride(materialIdStr, { removed: true });
+                      };
+
+                      const restoreBaseMaterial = (materialIdStr: string) => {
+                        const curr = item.material_overrides || {};
+                        const updated = { ...curr };
+                        delete updated[materialIdStr];
+                        updateItem(idx, { material_overrides: updated });
+                      };
+
+                      const addExtraMaterial = () => {
+                        const curr = item.extra_bom || [];
+                        const usedIds = new Set([
+                          ...baseBom.map(b => b.material_id),
+                          ...curr.map(e => e.material_id),
+                        ]);
+                        const first = materials.find(m => !usedIds.has(m.id));
+                        if (!first) return;
+                        updateItem(idx, { extra_bom: [...curr, { material_id: first.id, qty_per_unit: 1 }] });
+                      };
+
+                      const updateExtra = (eIdx: number, patch: Partial<ExtraBomEntry>) => {
+                        const curr = item.extra_bom || [];
+                        updateItem(idx, {
+                          extra_bom: curr.map((e, i) => (i === eIdx ? { ...e, ...patch } : e)),
+                        });
+                      };
+
+                      const removeExtra = (eIdx: number) => {
+                        const curr = item.extra_bom || [];
+                        updateItem(idx, { extra_bom: curr.filter((_, i) => i !== eIdx) });
+                      };
+
                       return (
                         <div className="pt-2 border-t border-dashed border-gray-200">
-                          <p className="text-xs font-medium text-gray-500 mb-2">Materiales (color / código)</p>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-gray-500">Materiales</p>
+                            <div className="flex items-center gap-2">
+                              {materials.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={addExtraMaterial}
+                                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5"
+                                >
+                                  <Plus size={11} /> Agregar
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewMatForm(
+                                    newMatForm?.itemIdx === idx
+                                      ? null
+                                      : { itemIdx: idx, name: '', unit: 'm' }
+                                  )
+                                }
+                                className="text-xs text-green-600 hover:text-green-800 flex items-center gap-0.5"
+                              >
+                                <Plus size={11} /> Nuevo
+                              </button>
+                            </div>
+                          </div>
                           <div className="space-y-1.5">
-                            {bomItems.map((bom) => {
-                              const override = item.material_overrides?.[String(bom.material_id)] || {};
+                            {/* Base BOM items */}
+                            {baseBom.map((bom) => {
+                              const key = String(bom.material_id);
+                              const ov = item.material_overrides?.[key] || {};
+                              const isRemoved = ov.removed;
+                              const activeMaterialId = ov.swap_material_id ?? bom.material_id;
+                              const activeMaterial = materials.find(m => m.id === activeMaterialId);
                               return (
-                                <div key={bom.material_id} className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-600 w-32 truncate" title={bom.material_name || String(bom.material_id)}>
-                                    {bom.material_name || `Material ${bom.material_id}`}
-                                  </span>
+                                <div key={bom.material_id} className={`flex items-center gap-1.5 ${isRemoved ? 'opacity-40' : ''}`}>
+                                  {/* Material selector */}
+                                  <select
+                                    value={activeMaterialId}
+                                    disabled={isRemoved}
+                                    onChange={(e) => updateOverride(key, { swap_material_id: Number(e.target.value) === bom.material_id ? undefined : Number(e.target.value) })}
+                                    className="text-xs border rounded px-1 py-1 w-36 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                                  >
+                                    {materials
+                                      .slice()
+                                      .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+                                      .map(m => <option key={m.id} value={m.id}>{m.name}</option>)
+                                    }
+                                  </select>
+                                  {/* Qty per unit */}
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={0.01}
+                                    disabled={isRemoved}
+                                    value={ov.qty_per_unit ?? bom.qty_per_unit ?? ''}
+                                    placeholder={String(bom.qty_per_unit ?? '')}
+                                    onChange={(e) => updateOverride(key, { qty_per_unit: e.target.value === '' ? undefined : Number(e.target.value) })}
+                                    className="w-14 border rounded px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    title={`${activeMaterial?.unit ?? ''}`}
+                                  />
+                                  {/* Color */}
                                   <input
                                     type="text"
                                     placeholder="Color"
-                                    value={override.color || ''}
-                                    onChange={(e) => {
-                                      const curr = item.material_overrides || {};
-                                      updateItem(idx, {
-                                        material_overrides: {
-                                          ...curr,
-                                          [String(bom.material_id)]: {
-                                            ...curr[String(bom.material_id)],
-                                            color: e.target.value,
-                                          },
-                                        },
-                                      });
-                                    }}
-                                    className="flex-1 border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    disabled={isRemoved}
+                                    value={ov.color || ''}
+                                    onChange={(e) => updateOverride(key, { color: e.target.value })}
+                                    className="flex-1 border rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
                                   />
+                                  {/* Code */}
                                   <input
                                     type="text"
-                                    placeholder="Código (opcional)"
-                                    value={override.code || ''}
-                                    onChange={(e) => {
-                                      const curr = item.material_overrides || {};
-                                      updateItem(idx, {
-                                        material_overrides: {
-                                          ...curr,
-                                          [String(bom.material_id)]: {
-                                            ...curr[String(bom.material_id)],
-                                            code: e.target.value,
-                                          },
-                                        },
-                                      });
-                                    }}
-                                    className="w-28 border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    placeholder="Código"
+                                    disabled={isRemoved}
+                                    value={ov.code || ''}
+                                    onChange={(e) => updateOverride(key, { code: e.target.value })}
+                                    className="w-20 border rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
                                   />
+                                  {/* Remove/restore toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => isRemoved ? restoreBaseMaterial(key) : removeBaseMaterial(key)}
+                                    className={`text-xs px-1.5 py-0.5 rounded border transition ${isRemoved ? 'text-blue-600 border-blue-300 hover:bg-blue-50' : 'text-gray-400 border-gray-200 hover:text-red-500 hover:border-red-300'}`}
+                                    title={isRemoved ? 'Restaurar' : 'Quitar de esta cotización'}
+                                  >
+                                    {isRemoved ? '↩' : '×'}
+                                  </button>
                                 </div>
                               );
                             })}
+
+                            {/* Extra BOM items */}
+                            {extraBom.map((entry, eIdx) => {
+                              const mat = materials.find(m => m.id === entry.material_id);
+                              return (
+                                <div key={eIdx} className="flex items-center gap-1.5 bg-blue-50 rounded px-1 py-0.5">
+                                  <select
+                                    value={entry.material_id}
+                                    onChange={(e) => updateExtra(eIdx, { material_id: Number(e.target.value) })}
+                                    className="text-xs border rounded px-1 py-1 w-36 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                                  >
+                                    {materials
+                                      .slice()
+                                      .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+                                      .map(m => <option key={m.id} value={m.id}>{m.name}</option>)
+                                    }
+                                  </select>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={0.01}
+                                    value={entry.qty_per_unit}
+                                    onChange={(e) => updateExtra(eIdx, { qty_per_unit: Number(e.target.value) })}
+                                    className="w-14 border rounded px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    title={mat?.unit ?? ''}
+                                    placeholder="Qty"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Color"
+                                    value={entry.color || ''}
+                                    onChange={(e) => updateExtra(eIdx, { color: e.target.value })}
+                                    className="flex-1 border rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Código"
+                                    value={entry.code || ''}
+                                    onChange={(e) => updateExtra(eIdx, { code: e.target.value })}
+                                    className="w-20 border rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeExtra(eIdx)}
+                                    className="text-xs text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 hover:text-red-500 hover:border-red-300 transition"
+                                  >×</button>
+                                </div>
+                              );
+                            })}
+                            {/* Inline new material form */}
+                            {newMatForm?.itemIdx === idx && (
+                              <div className="flex items-center gap-1.5 mt-1 bg-green-50 border border-green-200 rounded px-2 py-1.5">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  placeholder="Nombre del material *"
+                                  value={newMatForm.name}
+                                  onChange={(e) => setNewMatForm({ ...newMatForm, name: e.target.value })}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCreateMaterial(idx)}
+                                  className="flex-1 border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-400"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Unidad *"
+                                  value={newMatForm.unit}
+                                  onChange={(e) => setNewMatForm({ ...newMatForm, unit: e.target.value })}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCreateMaterial(idx)}
+                                  className="w-16 border rounded px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-green-400"
+                                  list="unit-suggestions"
+                                />
+                                <datalist id="unit-suggestions">
+                                  <option value="m" />
+                                  <option value="m²" />
+                                  <option value="kg" />
+                                  <option value="g" />
+                                  <option value="und" />
+                                  <option value="rollo" />
+                                  <option value="yarda" />
+                                </datalist>
+                                <button
+                                  type="button"
+                                  disabled={creatingMat || !newMatForm.name.trim() || !newMatForm.unit.trim()}
+                                  onClick={() => handleCreateMaterial(idx)}
+                                  className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50 transition whitespace-nowrap"
+                                >
+                                  {creatingMat ? '...' : 'Crear y agregar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewMatForm(null)}
+                                  className="text-xs text-gray-400 hover:text-gray-600"
+                                >×</button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -790,7 +1041,7 @@ export function QuotationDetail() {
                       <div className="flex items-center gap-3 pt-1 border-t border-dashed border-gray-200">
                         {item.design_image_path && (
                           <img
-                            src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'}/static/${item.design_image_path}`}
+                            src={`/api/static/${item.design_image_path}`}
                             alt="Diseño"
                             className="h-12 w-12 object-contain rounded border bg-white"
                           />

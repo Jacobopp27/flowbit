@@ -17,6 +17,7 @@ class QuotationItemCreate(BaseModel):
     order: int = 0
     design_image_path: Optional[str] = None
     material_overrides: Optional[Dict[str, Any]] = None
+    extra_bom: Optional[List[Dict[str, Any]]] = None
 
 
 class QuotationItemOut(QuotationItemCreate):
@@ -25,6 +26,7 @@ class QuotationItemOut(QuotationItemCreate):
     product_name: Optional[str] = None
     design_image_path: Optional[str] = None
     material_overrides: Optional[Dict[str, Any]] = None
+    extra_bom: Optional[List[Dict[str, Any]]] = None
 
     class Config:
         from_attributes = True
